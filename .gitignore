@@ -1,6 +1,7 @@
 # Secrets
 .env
 .env.*
+CLAUDE.md
 
 # Python
 __pycache__/
