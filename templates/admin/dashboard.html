@@ -203,11 +203,47 @@
         </div>
       </div>
 
-      <button id="delete-btn" onclick="deleteRdv()"
-              class="w-full py-3 rounded-xl text-sm font-medium cursor-pointer transition-all duration-200 hover:opacity-90"
-              style="background:#FEF2F2; color:#EF4444; border:1px solid rgba(239,68,68,0.2);">
-        Supprimer ce rendez-vous
-      </button>
+      <!-- Modifier section -->
+      <div id="edit-section" class="mb-4 hidden">
+        <div class="h-px mb-4" style="background:rgba(212,132,154,0.12);"></div>
+        <p class="text-xs font-medium mb-3" style="color:#8A6070;">Déplacer le rendez-vous</p>
+        <div class="flex gap-2 mb-3">
+          <div class="flex-1">
+            <p class="text-xs mb-1" style="color:#C4A8B0;">Nouvelle date</p>
+            <input type="date" id="edit-date"
+                   class="w-full text-sm px-3 py-2 rounded-xl outline-none"
+                   style="border:1px solid rgba(212,132,154,0.3); color:#2A1A20; background:#FDF8F5;"
+                   onchange="loadEditSlots()" />
+          </div>
+          <div class="flex-1">
+            <p class="text-xs mb-1" style="color:#C4A8B0;">Nouveau créneau</p>
+            <select id="edit-slot"
+                    class="w-full text-sm px-3 py-2 rounded-xl outline-none"
+                    style="border:1px solid rgba(212,132,154,0.3); color:#2A1A20; background:#FDF8F5;">
+              <option value="">— choisir —</option>
+            </select>
+          </div>
+        </div>
+        <p id="edit-error" class="text-xs mb-2 hidden" style="color:#EF4444;"></p>
+        <button id="save-btn" onclick="saveRdv()"
+                class="w-full py-2.5 rounded-xl text-sm font-medium cursor-pointer transition-all duration-200"
+                style="background:linear-gradient(135deg,#E8A0B4,#D4849A); color:#fff;">
+          Enregistrer le déplacement
+        </button>
+      </div>
+
+      <div class="flex gap-2">
+        <button onclick="toggleEdit()"
+                class="flex-1 py-3 rounded-xl text-sm font-medium cursor-pointer transition-all duration-200"
+                style="background:rgba(242,197,208,0.3); color:#B8607A; border:1px solid rgba(212,132,154,0.2);">
+          Modifier
+        </button>
+        <button id="delete-btn" onclick="deleteRdv()"
+                class="flex-1 py-3 rounded-xl text-sm font-medium cursor-pointer transition-all duration-200 hover:opacity-90"
+                style="background:#FEF2F2; color:#EF4444; border:1px solid rgba(239,68,68,0.2);">
+          Supprimer
+        </button>
+      </div>
     </div>
   </div>
 
@@ -320,14 +356,97 @@
 
   function closeModal() {
     document.getElementById('modal').classList.add('hidden');
+    document.getElementById('edit-section').classList.add('hidden');
+    document.getElementById('edit-error').classList.add('hidden');
+    document.getElementById('save-btn').textContent = 'Enregistrer le déplacement';
+    document.getElementById('save-btn').disabled = false;
     selectedRdv = null;
   }
 
   // ── Toast ─────────────────────────────────────────────
-  function showToast() {
+  function showToast(msg = 'Rendez-vous supprimé') {
     const t = document.getElementById('toast');
+    t.querySelector('span:last-child') && (t.querySelector('span:last-child').textContent = ' ' + msg);
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 5000);
+    setTimeout(() => t.classList.remove('show'), 4000);
+  }
+
+  // ── Toggle edit section ───────────────────────────────
+  function toggleEdit() {
+    const section = document.getElementById('edit-section');
+    const isHidden = section.classList.contains('hidden');
+    section.classList.toggle('hidden');
+    if (isHidden && selectedRdv) {
+      document.getElementById('edit-date').value  = selectedRdv.date;
+      document.getElementById('edit-error').classList.add('hidden');
+      loadEditSlots();
+    }
+  }
+
+  // ── Load available slots for edit ────────────────────
+  const ALL_SLOTS = ['10:00','11:30','13:00','14:30','16:00','17:30'];
+
+  async function loadEditSlots() {
+    const dateVal = document.getElementById('edit-date').value;
+    const select  = document.getElementById('edit-slot');
+    if (!dateVal) return;
+
+    try {
+      const r     = await fetch(`/api/availability?date=${dateVal}`);
+      const avail = await r.json();
+      select.innerHTML = '<option value="">— choisir —</option>';
+      ALL_SLOTS.forEach(slot => {
+        // Allow current slot even if "taken" (it's the same rdv)
+        const isCurrent = dateVal === selectedRdv.date && slot === selectedRdv.time_slot;
+        if (avail[slot] || isCurrent) {
+          const opt = document.createElement('option');
+          opt.value = slot;
+          opt.textContent = slot + (isCurrent ? ' (actuel)' : '');
+          select.appendChild(opt);
+        }
+      });
+    } catch(e) {}
+  }
+
+  // ── Save (reschedule) ─────────────────────────────────
+  async function saveRdv() {
+    if (!selectedRdv) return;
+    const newDate = document.getElementById('edit-date').value;
+    const newSlot = document.getElementById('edit-slot').value;
+    const errEl   = document.getElementById('edit-error');
+    errEl.classList.add('hidden');
+
+    if (!newDate || !newSlot) {
+      errEl.textContent = 'Sélectionne une date et un créneau.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    const btn = document.getElementById('save-btn');
+    btn.textContent = 'Enregistrement…';
+    btn.disabled = true;
+
+    try {
+      const r = await fetch(`/api/admin/reservations/${selectedRdv.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: newDate, time_slot: newSlot }),
+      });
+      const data = await r.json();
+      if (r.ok) {
+        closeModal();
+        await loadRdvs();
+        showToast('Rendez-vous déplacé');
+      } else {
+        errEl.textContent = data.error || 'Erreur.';
+        errEl.classList.remove('hidden');
+        btn.textContent = 'Enregistrer le déplacement';
+        btn.disabled = false;
+      }
+    } catch(e) {
+      btn.textContent = 'Enregistrer le déplacement';
+      btn.disabled = false;
+    }
   }
 
   // ── Delete ────────────────────────────────────────────

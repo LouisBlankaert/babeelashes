@@ -358,6 +358,33 @@ def api_admin_reservations():
         return jsonify({"error": "Invalid params"}), 400
 
 
+@app.route("/api/admin/reservations/<int:reservation_id>", methods=["PATCH"])
+@login_required
+def api_admin_update(reservation_id):
+    r = Reservation.query.get_or_404(reservation_id)
+    data      = request.get_json()
+    new_date  = data.get("date", "")
+    new_slot  = data.get("time_slot", "")
+    try:
+        booking_date = date.fromisoformat(new_date)
+    except ValueError:
+        return jsonify({"error": "Date invalide"}), 400
+    if new_slot not in TIME_SLOTS:
+        return jsonify({"error": "Créneau invalide"}), 400
+    conflict = Reservation.query.filter(
+        Reservation.date == booking_date,
+        Reservation.time_slot == new_slot,
+        Reservation.paid == True,
+        Reservation.id != reservation_id,
+    ).first()
+    if conflict:
+        return jsonify({"error": "Ce créneau est déjà pris"}), 409
+    r.date      = booking_date
+    r.time_slot = new_slot
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
 @app.route("/api/admin/reservations/<int:reservation_id>", methods=["DELETE"])
 @login_required
 def api_admin_delete(reservation_id):
