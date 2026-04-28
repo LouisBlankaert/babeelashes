@@ -264,15 +264,20 @@ def api_price():
 def api_availability():
     try:
         from datetime import datetime
+        from zoneinfo import ZoneInfo
+        BRUSSELS = ZoneInfo("Europe/Brussels")
+        now_brussels = datetime.now(BRUSSELS)
+        today_brussels = now_brussels.date()
+
         booking_date = date.fromisoformat(request.args.get("date", ""))
         taken = {r.time_slot for r in Reservation.query.filter_by(date=booking_date, paid=True).all()}
-        now = datetime.now()
+
         def is_available(slot):
             if slot in taken:
                 return False
-            if booking_date == date.today():
+            if booking_date == today_brussels:
                 h, m = map(int, slot.split(":"))
-                if (now.hour, now.minute) >= (h, m):
+                if (now_brussels.hour, now_brussels.minute) >= (h, m):
                     return False
             return True
         return jsonify({slot: is_available(slot) for slot in TIME_SLOTS})
