@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Babeelashes — Agenda</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family:'Inter',sans-serif; background:#FDF8F5; color:#2A1A20; }
+
+    /* ── Calendar grid ── */
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+    .cal-day-name {
+      text-align:center; font-size:0.7rem; font-weight:600;
+      text-transform:uppercase; letter-spacing:0.05em;
+      color:#C4A8B0; padding:0.5rem 0;
+    }
+    .cal-cell {
+      min-height: 110px;
+      background: #fff;
+      border: 1px solid rgba(212,132,154,0.12);
+      border-radius: 12px;
+      padding: 8px;
+      transition: border-color 0.2s;
+      position: relative;
+    }
+    .cal-cell:hover { border-color: rgba(212,132,154,0.3); }
+    .cal-cell.today { border-color: #D4849A; }
+    .cal-cell.other-month { background: rgba(253,248,245,0.5); opacity:0.5; }
+    .cal-cell.today .day-num { color:#D4849A; font-weight:700; }
+    .day-num {
+      font-size:0.8rem; font-weight:500; color:#2A1A20;
+      margin-bottom:4px;
+    }
+
+    /* ── Reservation pill ── */
+    .rdv-pill {
+      display:flex; align-items:center; justify-content:space-between;
+      background: rgba(242,197,208,0.35);
+      border: 1px solid rgba(212,132,154,0.25);
+      border-radius: 6px;
+      padding: 3px 6px;
+      margin-bottom: 3px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .rdv-pill:hover { background: rgba(212,132,154,0.25); }
+    .rdv-pill .time { font-weight:600; color:#B8607A; margin-right:4px; }
+    .rdv-pill .name-text { color:#2A1A20; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position:fixed; inset:0; background:rgba(42,26,32,0.4);
+      backdrop-filter:blur(4px); z-index:100;
+      display:flex; align-items:center; justify-content:center; padding:1rem;
+    }
+    .modal-box {
+      background:#fff; border-radius:1.5rem; padding:2rem;
+      max-width:380px; width:100%;
+      box-shadow: 0 20px 60px rgba(212,132,154,0.2);
+      border: 1px solid rgba(212,132,154,0.2);
+    }
+
+    @media (max-width: 768px) {
+      .cal-cell { min-height: 60px; padding: 4px; }
+      .rdv-pill .name-text { display:none; }
+    }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #2A1A20; color: #fff;
+      padding: 0.75rem 1.5rem; border-radius: 999px;
+      font-size: 0.85rem; font-weight: 500;
+      display: flex; align-items: center; gap: 0.5rem;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      z-index: 200;
+    }
+    #toast.show {
+      opacity: 1; transform: translateX(-50%) translateY(0);
+    }
+    #toast .check { color: #4ade80; font-size: 1rem; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- Header -->
+  <header class="px-4 pt-4 pb-0 max-w-7xl mx-auto">
+    <div class="flex items-center justify-between px-5 py-3 rounded-2xl"
+         style="background:rgba(253,248,245,0.92); backdrop-filter:blur(20px); border:1px solid rgba(212,132,154,0.2); box-shadow:0 2px 20px rgba(212,132,154,0.08);">
+      <p class="font-serif text-xl font-semibold"
+         style="background:linear-gradient(135deg,#F2C5D0,#D4849A,#B8607A);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+        Babeelashes
+      </p>
+      <span class="text-sm font-medium" style="color:#8A6070;">Agenda</span>
+      <a href="/admin/logout" class="text-xs px-3 py-1.5 rounded-lg cursor-pointer transition-colors duration-200"
+         style="color:#D4849A; border:1px solid rgba(212,132,154,0.3);">
+        Déconnexion
+      </a>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="max-w-7xl mx-auto px-4 py-6">
+
+    <!-- Nav mois -->
+    <div class="flex items-center justify-between mb-6">
+      <button id="prev-month" class="w-9 h-9 flex items-center justify-center rounded-full cursor-pointer transition-all duration-200"
+              style="background:rgba(212,132,154,0.08); border:1px solid rgba(212,132,154,0.2); color:#D4849A;">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="text-center">
+        <h1 id="month-title" class="font-serif text-2xl font-semibold" style="color:#2A1A20;"></h1>
+        <p id="month-count" class="text-xs mt-0.5" style="color:#8A6070;"></p>
+      </div>
+      <button id="next-month" class="w-9 h-9 flex items-center justify-center rounded-full cursor-pointer transition-all duration-200"
+              style="background:rgba(212,132,154,0.08); border:1px solid rgba(212,132,154,0.2); color:#D4849A;">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
+    <!-- Calendrier -->
+    <div class="cal-grid" id="cal-grid"></div>
+
+    <!-- Aujourd'hui btn -->
+    <div class="mt-4 text-center">
+      <button id="today-btn" class="text-xs px-4 py-2 rounded-xl cursor-pointer transition-all duration-200"
+              style="color:#D4849A; border:1px solid rgba(212,132,154,0.3);">
+        Aujourd'hui
+      </button>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast"><span class="check">✓</span> Rendez-vous supprimé</div>
+
+  <!-- Modal détail RDV -->
+  <div class="modal-overlay hidden" id="modal">
+    <div class="modal-box">
+      <div class="flex items-start justify-between mb-5">
+        <div>
+          <p class="text-xs tracking-widest uppercase mb-1" style="color:#D4849A;">Rendez-vous</p>
+          <h2 id="modal-name" class="font-serif text-2xl font-semibold" style="color:#2A1A20;"></h2>
+        </div>
+        <button onclick="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer"
+                style="background:rgba(212,132,154,0.1); color:#8A6070;">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-3 mb-6">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background:rgba(242,197,208,0.2);">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </div>
+          <div>
+            <p class="text-xs" style="color:#8A6070;">Date</p>
+            <p id="modal-date" class="text-sm font-medium" style="color:#2A1A20;"></p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background:rgba(242,197,208,0.2);">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <div>
+            <p class="text-xs" style="color:#8A6070;">Heure</p>
+            <p id="modal-time" class="text-sm font-medium" style="color:#2A1A20;"></p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background:rgba(242,197,208,0.2);">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="1.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+          </div>
+          <div>
+            <p class="text-xs" style="color:#8A6070;">Téléphone</p>
+            <p id="modal-phone" class="text-sm font-medium" style="color:#2A1A20;"></p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3" id="modal-email-row">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background:rgba(242,197,208,0.2);">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+          <div>
+            <p class="text-xs" style="color:#8A6070;">Email</p>
+            <p id="modal-email" class="text-sm font-medium" style="color:#2A1A20;"></p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background:rgba(242,197,208,0.2);">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+          </div>
+          <div>
+            <p class="text-xs" style="color:#8A6070;">Montant</p>
+            <p id="modal-price" class="text-sm font-semibold" style="color:#D4849A;"></p>
+          </div>
+        </div>
+      </div>
+
+      <button id="delete-btn" onclick="deleteRdv()"
+              class="w-full py-3 rounded-xl text-sm font-medium cursor-pointer transition-all duration-200 hover:opacity-90"
+              style="background:#FEF2F2; color:#EF4444; border:1px solid rgba(239,68,68,0.2);">
+        Supprimer ce rendez-vous
+      </button>
+    </div>
+  </div>
+
+<script>
+  const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const DAYS   = ['Lu','Ma','Me','Je','Ve','Sa','Di'];
+
+  const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+  let currentYear  = TODAY.getFullYear();
+  let currentMonth = TODAY.getMonth();
+  let allRdvs      = [];
+  let selectedRdv  = null;
+
+  // ── Fetch reservations for current month ──────────────
+  async function loadRdvs() {
+    try {
+      const r    = await fetch(`/api/admin/reservations?year=${currentYear}&month=${currentMonth + 1}`);
+      allRdvs    = await r.json();
+      renderCalendar();
+    } catch(e) { console.error(e); }
+  }
+
+  // ── Render calendar ───────────────────────────────────
+  function renderCalendar() {
+    const grid = document.getElementById('cal-grid');
+    grid.innerHTML = '';
+
+    document.getElementById('month-title').textContent = `${MONTHS[currentMonth]} ${currentYear}`;
+    document.getElementById('month-count').textContent =
+      allRdvs.length === 0 ? 'Aucun rendez-vous'
+      : allRdvs.length === 1 ? '1 rendez-vous'
+      : `${allRdvs.length} rendez-vous`;
+
+    // Day headers
+    DAYS.forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'cal-day-name';
+      el.textContent = d;
+      grid.appendChild(el);
+    });
+
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    let startOffset = firstDay.getDay() - 1;
+    if (startOffset < 0) startOffset = 6;
+
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const daysInPrev  = new Date(currentYear, currentMonth, 0).getDate();
+
+    // Prev month trailing days
+    for (let i = startOffset - 1; i >= 0; i--) {
+      grid.appendChild(makeCell(daysInPrev - i, true, []));
+    }
+
+    // Current month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const isToday = new Date(currentYear, currentMonth, day).toDateString() === TODAY.toDateString();
+      const dayRdvs = allRdvs.filter(r => r.date === dateStr);
+      grid.appendChild(makeCell(day, false, dayRdvs, isToday));
+    }
+
+    // Next month
+    const total    = startOffset + daysInMonth;
+    const trailing = total % 7 === 0 ? 0 : 7 - (total % 7);
+    for (let i = 1; i <= trailing; i++) {
+      grid.appendChild(makeCell(i, true, []));
+    }
+  }
+
+  function makeCell(day, otherMonth, rdvs, isToday = false) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell' + (otherMonth ? ' other-month' : '') + (isToday ? ' today' : '');
+
+    const num = document.createElement('div');
+    num.className = 'day-num';
+    num.textContent = day;
+    cell.appendChild(num);
+
+    rdvs.forEach(rdv => {
+      const pill = document.createElement('div');
+      pill.className = 'rdv-pill';
+      pill.innerHTML = `<span class="time">${rdv.time_slot}</span><span class="name-text">${rdv.name}</span>`;
+      pill.addEventListener('click', () => openModal(rdv));
+      cell.appendChild(pill);
+    });
+
+    return cell;
+  }
+
+  // ── Modal ─────────────────────────────────────────────
+  function openModal(rdv) {
+    selectedRdv = rdv;
+    const d = new Date(rdv.date + 'T12:00:00');
+    document.getElementById('modal-name').textContent  = rdv.name;
+    document.getElementById('modal-date').textContent  = d.toLocaleDateString('fr-BE', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    document.getElementById('modal-time').textContent  = rdv.time_slot;
+    document.getElementById('modal-phone').textContent = rdv.phone;
+    document.getElementById('modal-price').textContent = rdv.price + '€';
+
+    const emailRow = document.getElementById('modal-email-row');
+    if (rdv.email) {
+      document.getElementById('modal-email').textContent = rdv.email;
+      emailRow.style.display = 'flex';
+    } else {
+      emailRow.style.display = 'none';
+    }
+
+    document.getElementById('modal').classList.remove('hidden');
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
+    selectedRdv = null;
+  }
+
+  // ── Toast ─────────────────────────────────────────────
+  function showToast() {
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 5000);
+  }
+
+  // ── Delete ────────────────────────────────────────────
+  async function deleteRdv() {
+    if (!selectedRdv) return;
+
+    const btn = document.getElementById('delete-btn');
+    btn.textContent = 'Suppression…';
+    btn.disabled = true;
+
+    try {
+      const r = await fetch(`/api/admin/reservations/${selectedRdv.id}`, { method: 'DELETE' });
+      if (r.ok) {
+        closeModal();
+        await loadRdvs();
+        showToast();
+      }
+    } catch(e) {
+      btn.textContent = 'Erreur — réessaie';
+      btn.disabled = false;
+    }
+  }
+
+  // ── Navigation ────────────────────────────────────────
+  document.getElementById('prev-month').addEventListener('click', () => {
+    currentMonth--;
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    loadRdvs();
+  });
+  document.getElementById('next-month').addEventListener('click', () => {
+    currentMonth++;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    loadRdvs();
+  });
+  document.getElementById('today-btn').addEventListener('click', () => {
+    currentYear  = TODAY.getFullYear();
+    currentMonth = TODAY.getMonth();
+    loadRdvs();
+  });
+
+  // Close modal on overlay click
+  document.getElementById('modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // ── Init ──────────────────────────────────────────────
+  loadRdvs();
+</script>
+</body>
+</html>

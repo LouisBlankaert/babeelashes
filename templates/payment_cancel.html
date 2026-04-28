@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Paiement annulé — Babelash{% endblock %}
+
+{% block content %}
+<div class="min-h-screen pt-28 pb-16 px-6 flex items-center justify-center">
+  <div class="max-w-lg w-full text-center">
+
+    <!-- Icon -->
+    <div class="relative inline-flex items-center justify-center mb-8">
+      <div class="w-24 h-24 rounded-full flex items-center justify-center"
+           style="background: linear-gradient(135deg, rgba(242,197,208,0.15), rgba(212,132,154,0.08)); border: 1px solid rgba(212,132,154,0.3);">
+        <svg class="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+      </div>
+    </div>
+
+    <h1 class="font-serif text-4xl font-semibold mb-3" style="color:#2A1A20;">
+      Paiement annulé
+    </h1>
+    <p class="mb-10" style="color:#8A6070;">
+      Votre réservation n'a pas été finalisée.<br>
+      Aucun montant n'a été débité.
+    </p>
+
+    <div class="rounded-3xl p-6 mb-8 text-left"
+         style="background: #FFFFFF; border: 1px solid rgba(212,132,154,0.15); box-shadow: 0 4px 20px rgba(212,132,154,0.06);">
+      <p class="text-sm" style="color:#8A6070;">
+        Vous pouvez recommencer votre réservation à tout moment. L'acompte de <strong style="color:#2A1A20;">10€</strong> est nécessaire pour confirmer votre créneau.
+      </p>
+    </div>
+
+    <a href="/booking"
+       class="inline-flex items-center gap-2 px-8 py-3 rounded-full text-sm font-medium transition-all duration-200"
+       style="background: linear-gradient(135deg, #D4849A, #B8607A); color: white; box-shadow: 0 4px 15px rgba(212,132,154,0.35);">
+      Réessayer la réservation
+    </a>
+
+    <div class="mt-6">
+      <a href="/"
+         class="inline-flex items-center gap-2 text-sm transition-colors duration-200 hover:text-[#D4849A]"
+         style="color: #C4B08A;">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Retour à l'accueil
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

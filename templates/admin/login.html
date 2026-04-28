@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Babeelashes — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #FDF8F5; }
+    .form-input {
+      width: 100%; padding: 0.875rem 1rem;
+      background: #fff; border: 1px solid rgba(212,132,154,0.25);
+      border-radius: 0.75rem; font-size: 0.9375rem; color: #2A1A20;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-input:focus {
+      border-color: rgba(212,132,154,0.6);
+      box-shadow: 0 0 0 3px rgba(212,132,154,0.1);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center px-4">
+  <div class="w-full max-w-sm">
+
+    <div class="text-center mb-10">
+      <p class="font-serif text-3xl font-semibold mb-1"
+         style="background:linear-gradient(135deg,#F2C5D0,#D4849A,#B8607A);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+        Babeelashes
+      </p>
+      <p class="text-sm" style="color:#8A6070;">Espace administrateur</p>
+    </div>
+
+    <div class="rounded-3xl p-8" style="background:#fff; border:1px solid rgba(212,132,154,0.15); box-shadow:0 4px 30px rgba(212,132,154,0.08);">
+      <form method="POST">
+        <label class="block text-xs font-medium mb-2 tracking-wide" style="color:#8A6070;">Mot de passe</label>
+        <input type="password" name="password" class="form-input mb-4" placeholder="••••••••" autofocus required/>
+
+        {% if error %}
+        <p class="text-xs mb-4 text-red-400">{{ error }}</p>
+        {% endif %}
+
+        <button type="submit"
+                class="w-full py-3 rounded-xl text-sm font-semibold text-white cursor-pointer transition-opacity hover:opacity-90"
+                style="background:linear-gradient(135deg,#E8A0B4,#D4849A);">
+          Connexion
+        </button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

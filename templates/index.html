@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+
+{% block title %}Babeelashes — Rehaussement de cils à Bruxelles{% endblock %}
+
+{% block head %}
+<style>
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); opacity: 0.4; }
+    50%       { transform: translateY(-16px); opacity: 0.8; }
+  }
+  .particle { animation: float var(--dur, 6s) ease-in-out infinite; animation-delay: var(--delay, 0s); }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  .pricing-card {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .pricing-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 50px rgba(212,132,154,0.15);
+  }
+
+  .lash-divider { display: flex; align-items: center; gap: 1rem; }
+  .lash-divider::before, .lash-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(212,132,154,0.35), transparent);
+  }
+
+  .cta-glow {
+    box-shadow: 0 4px 25px rgba(212,132,154,0.35);
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+  }
+  .cta-glow:hover {
+    box-shadow: 0 8px 40px rgba(212,132,154,0.5);
+    transform: translateY(-2px);
+  }
+
+  /* ── Carousel ── */
+  .carousel-wrap { position:relative; width:100%; aspect-ratio:4/5; border-radius:1.5rem; overflow:hidden; border:1px solid rgba(212,132,154,0.2); box-shadow:0 10px 40px rgba(212,132,154,0.12); }
+  .carousel-track { position:absolute; inset:0; display:flex; transition:transform 0.6s cubic-bezier(0.4,0,0.2,1); will-change:transform; }
+  .carousel-slide { flex:0 0 100%; width:100%; height:100%; position:relative; overflow:hidden; }
+  .carousel-slide img,
+  .carousel-slide video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .carousel-dot { width:6px; height:6px; border-radius:999px; background:rgba(255,255,255,0.5); transition:all 0.3s ease; cursor:pointer; border:none; padding:0; }
+  .carousel-dot.active { width:20px; background:#fff; }
+  .carousel-arrow {
+    position:absolute; top:50%; transform:translateY(-50%);
+    width:36px; height:36px; border-radius:50%; z-index:10; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,0.85); backdrop-filter:blur(8px);
+    border:1px solid rgba(212,132,154,0.2); color:#B8607A;
+    transition:all 0.2s ease; box-shadow:0 2px 12px rgba(212,132,154,0.15);
+  }
+  .carousel-arrow:hover { background:#fff; box-shadow:0 4px 20px rgba(212,132,154,0.25); }
+
+  @media (max-width: 768px) {
+    .sticky-cta {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 1rem;
+      right: 1rem;
+      z-index: 40;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══════════════════════ HERO ══════════════════════ -->
+<section class="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 pb-12">
+
+  <!-- Background -->
+  <div class="absolute inset-0" style="background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(242,197,208,0.3) 0%, transparent 65%), linear-gradient(180deg, #FDF8F5 0%, #F7EFE8 100%);"></div>
+
+  <!-- Floating petals / particles -->
+  <div class="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+    <div class="particle absolute top-1/4 left-[15%] w-3 h-3 rounded-full" style="background: rgba(242,197,208,0.6); --dur:7s; --delay:0s;"></div>
+    <div class="particle absolute top-1/3 right-[20%] w-2 h-2 rounded-full" style="background: rgba(212,132,154,0.4); --dur:9s; --delay:1s;"></div>
+    <div class="particle absolute top-2/3 left-[30%] w-4 h-4 rounded-full" style="background: rgba(242,197,208,0.5); --dur:6s; --delay:2.5s;"></div>
+    <div class="particle absolute bottom-1/3 right-[28%] w-2 h-2 rounded-full" style="background: rgba(184,96,122,0.25); --dur:8s; --delay:0.5s;"></div>
+    <div class="particle absolute top-[45%] right-[12%] w-3 h-3 rounded-full" style="background: rgba(232,160,180,0.5); --dur:10s; --delay:3s;"></div>
+    <!-- Lash arc decoration -->
+    <svg class="particle absolute top-16 right-24 opacity-15" style="--dur:12s; --delay:1s;" width="100" height="50" viewBox="0 0 100 50" fill="none">
+      <path d="M0 45 Q25 5 50 25 Q75 45 100 5" stroke="#D4849A" stroke-width="1.5" fill="none"/>
+    </svg>
+    <svg class="particle absolute bottom-28 left-20 opacity-15" style="--dur:14s; --delay:2s;" width="70" height="35" viewBox="0 0 70 35" fill="none">
+      <path d="M0 30 Q17 5 35 18 Q52 30 70 5" stroke="#D4849A" stroke-width="1.5" fill="none"/>
+    </svg>
+  </div>
+
+  <div class="relative z-10 max-w-4xl mx-auto px-6 text-center">
+
+    <!-- Badge -->
+    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium mb-8 tracking-widest uppercase"
+         style="background: rgba(242,197,208,0.35); border: 1px solid rgba(212,132,154,0.3); color: #B8607A;">
+      <span class="w-1.5 h-1.5 rounded-full bg-[#D4849A] animate-pulse"></span>
+      Bruxelles · Lun–Dim 10h–18h
+    </div>
+
+    <!-- Headline -->
+    <h1 class="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-semibold leading-tight mb-6" style="letter-spacing:-0.02em;">
+      <span style="color:#2A1A20;">Sublimez</span><br/>
+      <em class="text-rose-gradient not-italic">votre regard</em>
+    </h1>
+
+    <p class="text-lg md:text-xl max-w-xl mx-auto mb-10 leading-relaxed" style="color:#8A6070; font-weight:300;">
+      Rehaussement de cils professionnelles à Bruxelles.<br class="hidden sm:block"/>
+      Un résultat naturel, en seulement 1h30.
+    </p>
+
+    <!-- Promo badge -->
+    <div class="inline-flex items-center gap-3 px-5 py-3 rounded-2xl mb-10"
+         style="background: rgba(242,197,208,0.3); border: 1px solid rgba(212,132,154,0.3);">
+      <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="#D4849A"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+      <span class="text-sm font-medium" style="color:#B8607A;">Promotion — <strong>20€</strong> seulement jusqu'au 30 avril 2026</span>
+    </div>
+
+    <!-- CTAs -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+      <a href="/booking"
+         class="cta-glow w-full sm:w-auto px-8 py-4 rounded-2xl text-base font-semibold text-white cursor-pointer"
+         style="background: linear-gradient(135deg, #E8A0B4 0%, #D4849A 50%, #B8607A 100%);">
+        Réserver maintenant
+      </a>
+      <a href="#services"
+         class="w-full sm:w-auto px-8 py-4 rounded-2xl text-base font-medium cursor-pointer transition-all duration-200 hover:border-[#D4849A]"
+         style="color:#8A6070; border: 1px solid rgba(212,132,154,0.3);">
+        Découvrir les tarifs
+      </a>
+    </div>
+
+    <!-- Scroll hint -->
+    <div class="mt-16 flex flex-col items-center gap-2 opacity-40">
+      <span class="text-xs tracking-widest uppercase" style="color:#8A6070;">Scroll</span>
+      <div class="w-px h-12 bg-gradient-to-b from-[#D4849A] to-transparent"></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════ SOCIAL PROOF ══════════════════════ -->
+<section class="py-8 border-y reveal" style="border-color: rgba(212,132,154,0.12); background: #FFFFFF;">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="flex flex-wrap items-center justify-center gap-10 text-center">
+      <div>
+        <p class="font-serif text-3xl font-semibold text-rose-gradient">1h30</p>
+        <p class="text-xs mt-1 tracking-wider uppercase" style="color:#8A6070;">Durée de la pose</p>
+      </div>
+      <div class="w-px h-10 hidden sm:block" style="background: rgba(212,132,154,0.2);"></div>
+      <div>
+        <p class="font-serif text-3xl font-semibold text-rose-gradient">7j/7</p>
+        <p class="text-xs mt-1 tracking-wider uppercase" style="color:#8A6070;">Disponible</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════ SERVICES ══════════════════════ -->
+<section id="services" class="py-24 px-6">
+  <div class="max-w-6xl mx-auto">
+
+    <div class="text-center mb-16 reveal">
+      <div class="lash-divider mb-6"><span class="text-xs tracking-widest uppercase" style="color:#D4849A;">Tarifs</span></div>
+      <h2 class="font-serif text-4xl md:text-5xl font-semibold mb-4" style="color:#2A1A20;">
+        Un seul service,<br/><em class="text-rose-gradient not-italic">l'excellence</em>
+      </h2>
+      <p style="color:#8A6070;" class="max-w-md mx-auto">Rehaussement de cils – pose complète · 1h30</p>
+    </div>
+
+    <!-- Promo card -->
+    <div class="reveal mb-6 flex justify-center">
+      <div class="pricing-card relative rounded-3xl p-8 w-full max-w-sm cursor-pointer"
+           style="background: linear-gradient(135deg, rgba(242,197,208,0.4) 0%, rgba(247,239,232,0.6) 100%); border: 1px solid rgba(212,132,154,0.35);">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+          <span class="px-4 py-1 rounded-full text-xs font-semibold text-white"
+                style="background: linear-gradient(135deg, #E8A0B4, #D4849A);">Offre limitée</span>
+        </div>
+        <div class="text-center pt-4">
+          <p class="text-xs tracking-widest uppercase mb-3" style="color:#D4849A;">Promotion</p>
+          <p class="font-serif text-6xl font-bold text-rose-gradient mb-1">20€</p>
+          <p class="text-sm mb-6" style="color:#8A6070;">Valable jusqu'au 30 avril 2026</p>
+          <p class="text-sm mb-8" style="color:#2A1A20;">Tous les jours · Lundi au dimanche</p>
+          <a href="/booking"
+             class="block w-full py-3 rounded-xl text-sm font-semibold text-white cursor-pointer transition-opacity duration-200 hover:opacity-90"
+             style="background: linear-gradient(135deg, #E8A0B4, #D4849A);">
+            Profiter de l'offre
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Semaine / Weekend -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 reveal">
+      {% for label, price, days in [("Lun–Sam", "35€", "Lundi au samedi"), ("Dimanche", "40€", "Dimanche uniquement")] %}
+      <div class="pricing-card rounded-3xl p-8 cursor-pointer"
+           style="background: #FFFFFF; border: 1px solid rgba(212,132,154,0.15); box-shadow: 0 2px 20px rgba(212,132,154,0.06);">
+        <p class="text-xs tracking-widest uppercase mb-4" style="color:#D4849A;">{{ label }}</p>
+        <p class="font-serif text-5xl font-semibold mb-1" style="color:#2A1A20;">{{ price }}</p>
+        <p class="text-sm mb-6" style="color:#8A6070;">Après la promotion</p>
+        <ul class="space-y-3 text-sm mb-8" style="color:#8A6070;">
+          {% for item in [days, "Pose complète · 1h30", "10h – 18h"] %}
+          <li class="flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            {{ item }}
+          </li>
+          {% endfor %}
+        </ul>
+        <a href="/booking"
+           class="block w-full py-3 rounded-xl text-sm font-medium text-center cursor-pointer transition-all duration-200 hover:bg-[rgba(212,132,154,0.08)]"
+           style="color:#D4849A; border: 1px solid rgba(212,132,154,0.3);">
+          Réserver
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Acompte notice -->
+    <div class="mt-8 flex items-start gap-3 p-5 rounded-2xl reveal"
+         style="background: rgba(242,197,208,0.15); border: 1px solid rgba(212,132,154,0.2);">
+      <svg class="w-5 h-5 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
+      </svg>
+      <p class="text-sm" style="color:#8A6070;">
+        Un <strong style="color:#D4849A;">acompte de 10€</strong> est demandé lors de la réservation pour confirmer votre rendez-vous.
+        <!-- Stripe payment will be integrated here -->
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════ HOW IT WORKS ══════════════════════ -->
+<section class="py-24 px-6" style="background: #FFFFFF;">
+  <div class="max-w-4xl mx-auto">
+    <div class="text-center mb-16 reveal">
+      <div class="lash-divider mb-6"><span class="text-xs tracking-widest uppercase" style="color:#D4849A;">Comment ça marche</span></div>
+      <h2 class="font-serif text-4xl md:text-5xl font-semibold" style="color:#2A1A20;">
+        Simple comme<br/><em class="text-rose-gradient not-italic">bonjour</em>
+      </h2>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 reveal">
+      {% for num, title, desc in [
+        ("01", "Choisissez votre date", "Sélectionnez un jour et un créneau disponible selon vos envies."),
+        ("02", "Réservation confirmée", "Votre rendez-vous est enregistré instantanément."),
+        ("03", "Profitez de vos cils",  "Arrivez détendues. 1h30 plus tard, vous ressortez sublimée.")
+      ] %}
+      <div class="text-center">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-full mb-5"
+             style="background: rgba(242,197,208,0.3); border: 1px solid rgba(212,132,154,0.25);">
+          <span class="font-serif text-lg font-semibold text-rose-gradient">{{ num }}</span>
+        </div>
+        <h3 class="font-serif text-lg font-medium mb-2" style="color:#2A1A20;">{{ title }}</h3>
+        <p class="text-sm leading-relaxed" style="color:#8A6070;">{{ desc }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════ ABOUT ══════════════════════ -->
+<section id="about" class="py-24 px-6">
+  <div class="max-w-6xl mx-auto">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+
+      <!-- Carousel -->
+      <div class="reveal order-2 md:order-1">
+        <div class="carousel-wrap">
+
+          <!-- Slides — générés automatiquement depuis static/img/ -->
+          <div id="carousel-track" class="carousel-track">
+            {% for file in media %}
+              {% set ext = file.rsplit('.', 1)[-1].lower() %}
+              <div class="carousel-slide">
+                {% if ext in ['mp4', 'mov', 'webm'] %}
+                  <video muted playsinline preload="auto"
+                         style="width:100%;height:100%;object-fit:cover;display:block;">
+                    <source src="{{ url_for('static', filename='img/' ~ file) }}"
+                            type="video/{{ 'webm' if ext == 'webm' else 'mp4' }}"/>
+                  </video>
+                {% else %}
+                  <img src="{{ url_for('static', filename='img/' ~ file) }}"
+                       alt="Babeelashes" style="width:100%;height:100%;object-fit:cover;display:block;"/>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+
+          <!-- Arrows -->
+          <button class="carousel-arrow" style="left:12px;" onclick="carouselMove(-1)" aria-label="Précédent">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button class="carousel-arrow" style="right:12px;" onclick="carouselMove(1)" aria-label="Suivant">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+
+          <!-- Dots -->
+          <div id="carousel-dots" class="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-2"></div>
+        </div>
+      </div>
+
+      <!-- Text -->
+      <div class="reveal order-1 md:order-2">
+        <div class="lash-divider mb-6"><span class="text-xs tracking-widest uppercase" style="color:#D4849A;">À propos</span></div>
+        <h2 class="font-serif text-4xl md:text-5xl font-semibold mb-6 leading-tight" style="color:#2A1A20;">
+          Votre beauté,<br/><em class="text-rose-gradient not-italic">notre passion</em>
+        </h2>
+        <p class="leading-relaxed mb-6" style="color:#8A6070;">
+          Chez Babeelashes, nous croyons que chaque regard mérite d'être sublimé. Basées à Bruxelles, nous vous accueillons 7 jours sur 7 pour une pose d'rehaussement de cils personnalisée, en seulement 1h30.
+        </p>
+        <p class="leading-relaxed mb-10" style="color:#8A6070;">
+          Notre technique douce et précise garantit un résultat naturel et durable, adapté à la morphologie unique de votre œil.
+        </p>
+        <div class="grid grid-cols-2 gap-4">
+          {% for title, desc in [
+            ("Technique douce",  "Pose non agressive, respectueuse de vos cils naturels"),
+            ("Résultat naturel", "Un regard sublimé, comme si c'était les vôtres"),
+            ("Bruxelles",        "Accessible et disponible 7j/7"),
+            ("1h30",       "Efficace, rapide et professionnel")
+          ] %}
+          <div class="p-4 rounded-2xl" style="background: rgba(242,197,208,0.15); border: 1px solid rgba(212,132,154,0.15);">
+            <p class="text-sm font-medium mb-1" style="color:#D4849A;">{{ title }}</p>
+            <p class="text-xs leading-relaxed" style="color:#8A6070;">{{ desc }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+
+<!-- ══════════════════════ SOCIAL ══════════════════════ -->
+<section class="py-24 px-6">
+  <div class="max-w-2xl mx-auto text-center reveal">
+    <div class="lash-divider mb-6"><span class="text-xs tracking-widest uppercase" style="color:#D4849A;">Suivez-nous</span></div>
+    <h2 class="font-serif text-3xl md:text-4xl font-semibold mb-4" style="color:#2A1A20;">On est sur les réseaux</h2>
+    <p class="mb-10" style="color:#8A6070;">Retrouvez nos transformations et inspirations sur TikTok et Instagram.</p>
+    <div class="flex items-center justify-center gap-6">
+      {% for platform, handle, url, icon_path in [
+        ("TikTok",    "@babeelashes", "https://tiktok.com/@babeelashes", "M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.75a8.2 8.2 0 004.79 1.52V6.84a4.85 4.85 0 01-1.02-.15z"),
+        ("Instagram", "babeelashes",  "https://instagram.com/babeelashes",  "M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z")
+      ] %}
+      <a href="{{ url }}" target="_blank" rel="noopener noreferrer"
+         class="flex items-center gap-3 px-6 py-4 rounded-2xl cursor-pointer transition-all duration-200 hover:-translate-y-1"
+         style="background: rgba(242,197,208,0.2); border: 1px solid rgba(212,132,154,0.25);">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="#D4849A"><path d="{{ icon_path }}"/></svg>
+        <div class="text-left">
+          <p class="text-sm font-medium" style="color:#2A1A20;">{{ platform }}</p>
+          <p class="text-xs" style="color:#8A6070;">{{ handle }}</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════ FINAL CTA ══════════════════════ -->
+<section id="contact" class="py-24 px-6" style="background: #FFFFFF;">
+  <div class="max-w-3xl mx-auto reveal">
+    <div class="relative rounded-3xl p-12 text-center overflow-hidden"
+         style="background: linear-gradient(135deg, rgba(242,197,208,0.3) 0%, rgba(247,239,232,0.5) 100%); border: 1px solid rgba(212,132,154,0.25);">
+      <div class="absolute inset-0 rounded-3xl pointer-events-none" style="background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(242,197,208,0.4) 0%, transparent 70%);"></div>
+      <div class="relative z-10">
+        <p class="text-xs tracking-widest uppercase mb-4" style="color:#D4849A;">Prêtes ?</p>
+        <h2 class="font-serif text-4xl md:text-5xl font-semibold mb-4 leading-tight" style="color:#2A1A20;">
+          Réservez votre pose<br/><em class="text-rose-gradient not-italic">dès maintenant</em>
+        </h2>
+        <p class="mb-8 max-w-md mx-auto" style="color:#8A6070;">
+          Disponible 7j/7 de 10h à 18h à Bruxelles.<br/>
+          Promotion à 20€ jusqu'au 30 avril 2026.
+        </p>
+        <a href="/booking"
+           class="cta-glow inline-block px-10 py-4 rounded-2xl text-base font-semibold text-white cursor-pointer"
+           style="background: linear-gradient(135deg, #E8A0B4 0%, #D4849A 50%, #B8607A 100%);">
+          Réserver mon rendez-vous
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Sticky mobile CTA -->
+<div class="sticky-cta md:hidden">
+  <a href="/booking"
+     class="block w-full py-4 rounded-2xl text-base font-semibold text-white text-center cursor-pointer"
+     style="background: linear-gradient(135deg, #E8A0B4 0%, #D4849A 100%); box-shadow: 0 8px 30px rgba(212,132,154,0.4);">
+    Réserver — 20€
+  </a>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver(
+    entries => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } }),
+    { threshold: 0.1 }
+  );
+  reveals.forEach(el => observer.observe(el));
+
+  // ── Carousel ──────────────────────────────────────────
+  const track  = document.getElementById('carousel-track');
+  const dotsEl = document.getElementById('carousel-dots');
+  const slides = track ? Array.from(track.querySelectorAll('.carousel-slide')) : [];
+  let current = 0, timer = null, paused = false;
+
+  function updateDots() {
+    dotsEl.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('active', i === current));
+  }
+
+  function carouselGo(idx) {
+    clearTimer();
+
+    // Stoppe toutes les vidéos et nettoie leurs handlers
+    slides.forEach(s => {
+      const v = s.querySelector('video');
+      if (v) { v.pause(); v.onended = null; }
+    });
+
+    current = (idx + slides.length) % slides.length;
+    track.style.transform = `translateX(-${current * 100}%)`;
+    updateDots();
+
+    const vid = slides[current].querySelector('video');
+    if (vid) {
+      vid.currentTime = 0;
+      vid.play().catch(() => {});
+      vid.onended = () => { if (!paused) carouselGo(current + 1); };
+    } else {
+      if (!paused) timer = setTimeout(() => carouselGo(current + 1), 3000);
+    }
+  }
+
+  function clearTimer() { clearTimeout(timer); timer = null; }
+
+  function carouselMove(dir) { paused = false; carouselGo(current + dir); }
+
+  if (slides.length > 0) {
+    // Build dots
+    slides.forEach((_, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+      dot.addEventListener('click', () => { paused = false; carouselGo(i); });
+      dotsEl.appendChild(dot);
+    });
+
+    carouselGo(0);
+
+    // Pause on hover
+    track.parentElement.addEventListener('mouseenter', () => {
+      paused = true;
+      clearTimer();
+      const vid = slides[current].querySelector('video');
+      if (vid) vid.pause();
+    });
+    track.parentElement.addEventListener('mouseleave', () => {
+      paused = false;
+      const vid = slides[current].querySelector('video');
+      if (vid) { vid.play(); }
+      else timer = setTimeout(() => carouselGo(current + 1), 3000);
+    });
+
+    // Touch swipe
+    let tx = 0;
+    track.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+    track.addEventListener('touchend',   e => {
+      const diff = tx - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 40) carouselMove(diff > 0 ? 1 : -1);
+    });
+  }
+</script>
+{% endblock %}

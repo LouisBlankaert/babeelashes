@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Erreur paiement — Babelash{% endblock %}
+
+{% block content %}
+<div class="min-h-screen pt-28 pb-16 px-6 flex items-center justify-center">
+  <div class="max-w-lg w-full text-center">
+
+    <div class="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8"
+         style="background: rgba(255,200,200,0.2); border: 1px solid rgba(200,80,80,0.2);">
+      <svg class="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="#C05050" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </div>
+
+    <h1 class="font-serif text-4xl font-semibold mb-3" style="color:#2A1A20;">
+      Une erreur est survenue
+    </h1>
+    <p class="mb-8" style="color:#8A6070;">
+      Impossible d'initialiser le paiement. Veuillez réessayer.
+    </p>
+
+    <a href="/booking"
+       class="inline-flex items-center gap-2 px-8 py-3 rounded-full text-sm font-medium transition-all duration-200"
+       style="background: linear-gradient(135deg, #D4849A, #B8607A); color: white; box-shadow: 0 4px 15px rgba(212,132,154,0.35);">
+      Retour à la réservation
+    </a>
+
+  </div>
+</div>
+{% endblock %}

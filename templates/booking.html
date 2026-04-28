@@ -1,0 +1,574 @@
+{% extends "base.html" %}
+
+{% block title %}Réserver — Babeelashes{% endblock %}
+
+{% block head %}
+<style>
+  /* ── Slots ── */
+  .slot-btn {
+    transition: all 0.2s ease;
+    cursor: pointer;
+    color: #8A6070;
+    border: 1px solid rgba(212,132,154,0.2);
+    background: #FFFFFF;
+  }
+  .slot-btn:hover:not(:disabled) {
+    border-color: rgba(212,132,154,0.5);
+    background: rgba(242,197,208,0.15);
+    color: #D4849A;
+  }
+  .slot-btn.selected {
+    background: rgba(242,197,208,0.3);
+    border-color: #D4849A;
+    color: #B8607A;
+    font-weight: 600;
+  }
+  .slot-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    text-decoration: line-through;
+  }
+
+  /* ── Form inputs ── */
+  .form-input {
+    background: #FFFFFF;
+    border: 1px solid rgba(212,132,154,0.25);
+    color: #2A1A20;
+    border-radius: 0.75rem;
+    padding: 0.875rem 1rem;
+    width: 100%;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9375rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    outline: none;
+  }
+  .form-input::placeholder { color: #C4A8B0; }
+  .form-input:focus {
+    border-color: rgba(212,132,154,0.6);
+    box-shadow: 0 0 0 3px rgba(212,132,154,0.1);
+  }
+  .form-input.error { border-color: rgba(239,68,68,0.5); }
+  .form-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #8A6070;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.03em;
+  }
+  .error-msg { font-size: 0.75rem; color: #EF4444; margin-top: 0.375rem; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #2A1A20; color: #fff;
+    padding: 0.75rem 1.5rem; border-radius: 999px;
+    font-size: 0.85rem; font-weight: 500;
+    display: flex; align-items: center; gap: 0.5rem;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 200;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast .toast-icon { font-size: 1rem; }
+
+  /* ── Custom Calendar ── */
+  .cal-wrap {
+    background: #FFFFFF;
+    border: 1px solid rgba(212,132,154,0.2);
+    border-radius: 1.25rem;
+    overflow: hidden;
+    box-shadow: 0 2px 20px rgba(212,132,154,0.07);
+  }
+  .cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(212,132,154,0.1);
+  }
+  .cal-nav {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: rgba(212,132,154,0.08);
+    border: 1px solid rgba(212,132,154,0.15);
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #D4849A;
+  }
+  .cal-nav:hover { background: rgba(212,132,154,0.18); }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    padding: 0.75rem;
+  }
+  .cal-day-name {
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #C4A8B0;
+    padding: 0.5rem 0;
+  }
+  .cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 0.875rem;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    color: #2A1A20;
+    position: relative;
+  }
+  .cal-day:hover:not(.disabled):not(.past) {
+    background: rgba(242,197,208,0.4);
+    color: #B8607A;
+  }
+  .cal-day.today {
+    font-weight: 600;
+    color: #D4849A;
+  }
+  .cal-day.today::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: #D4849A;
+  }
+  .cal-day.selected {
+    background: linear-gradient(135deg, #E8A0B4, #D4849A) !important;
+    color: #fff !important;
+    font-weight: 600;
+  }
+  .cal-day.selected::after { display: none; }
+  .cal-day.past, .cal-day.disabled {
+    color: #E0D0D5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  .cal-day.empty { pointer-events: none; }
+  .cal-day.other-month { color: #DDD0D4; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="toast"><span class="toast-icon">⚠️</span> <span id="toast-msg"></span></div>
+<div class="min-h-screen pt-28 pb-24 px-4 sm:px-6" style="background: var(--creme);">
+  <div class="max-w-2xl mx-auto">
+
+    <!-- Header -->
+    <div class="text-center mb-10">
+      <a href="/" class="inline-flex items-center gap-2 text-sm mb-6 cursor-pointer transition-colors duration-200"
+         style="color:#8A6070;" onmouseover="this.style.color='#D4849A'" onmouseout="this.style.color='#8A6070'">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Retour
+      </a>
+      <h1 class="font-serif text-4xl md:text-5xl font-semibold mb-2" style="color:#2A1A20;">
+        Votre <em class="text-rose-gradient not-italic">rendez-vous</em>
+      </h1>
+      <p style="color:#8A6070;">Rehaussement de cils · 1h30 · Bruxelles</p>
+    </div>
+
+    <!-- Card -->
+    <div class="rounded-3xl p-6 sm:p-8 md:p-10"
+         style="background:#FFFFFF; border:1px solid rgba(212,132,154,0.15); box-shadow:0 4px 30px rgba(212,132,154,0.08);">
+
+      <form method="POST" action="/booking" id="booking-form">
+
+        <!-- Hidden inputs -->
+        <input type="hidden" name="date"      id="date_input"      value="{{ form_data.date or '' }}" required />
+        <input type="hidden" name="time_slot" id="time_slot_input" value="{{ form_data.time_slot or '' }}" required />
+
+        <!-- ── ÉTAPE 1 : Calendrier ── -->
+        <div class="mb-8">
+          <h2 class="font-serif text-xl font-medium mb-5 flex items-center gap-3" style="color:#2A1A20;">
+            <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0"
+                  style="background:linear-gradient(135deg,#E8A0B4,#D4849A);">1</span>
+            Choisissez votre date
+          </h2>
+
+          <!-- Calendar -->
+          <div class="cal-wrap">
+            <div class="cal-header">
+              <button type="button" class="cal-nav" id="cal-prev" aria-label="Mois précédent">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <p id="cal-title" class="font-serif text-base font-semibold" style="color:#2A1A20;"></p>
+              <button type="button" class="cal-nav" id="cal-next" aria-label="Mois suivant">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+            <div class="cal-grid" id="cal-grid"></div>
+          </div>
+
+          <!-- Selected date display -->
+          <div id="selected-date-display" class="mt-3 hidden flex items-center gap-2 text-sm">
+            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            <span style="color:#8A6070;">Sélectionné :</span>
+            <span id="selected-date-text" class="font-medium" style="color:#2A1A20;"></span>
+            <span id="price-display" class="ml-2 font-semibold" style="color:#D4849A;"></span>
+          </div>
+          {% if errors.date %}<p class="error-msg mt-2" role="alert">{{ errors.date }}</p>{% endif %}
+        </div>
+
+        <div class="h-px mb-8" style="background:rgba(212,132,154,0.1);"></div>
+
+        <!-- ── ÉTAPE 2 : Créneaux ── -->
+        <div class="mb-8">
+          <h2 class="font-serif text-xl font-medium mb-5 flex items-center gap-3" style="color:#2A1A20;">
+            <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0"
+                  style="background:linear-gradient(135deg,#E8A0B4,#D4849A);">2</span>
+            Choisissez votre créneau
+          </h2>
+
+          <!-- Slots loading state -->
+          <div id="slots-placeholder" class="text-sm text-center py-6 rounded-xl" style="color:#C4A8B0; background:rgba(242,197,208,0.08); border:1px dashed rgba(212,132,154,0.2);">
+            Sélectionnez d'abord une date
+          </div>
+
+          <div class="grid grid-cols-3 sm:grid-cols-4 gap-2" id="slots-container" role="radiogroup" aria-label="Créneaux disponibles" style="display:none;">
+            {% for slot in slots %}
+            <button type="button" role="radio"
+                    aria-checked="{{ 'true' if form_data.time_slot == slot else 'false' }}"
+                    class="slot-btn py-3 px-2 rounded-xl text-sm {% if form_data.time_slot == slot %}selected{% endif %}"
+                    data-slot="{{ slot }}"
+                    onclick="selectSlot('{{ slot }}', this)">
+              {{ slot }}
+            </button>
+            {% endfor %}
+          </div>
+          {% if errors.time_slot %}<p class="error-msg mt-2" role="alert">{{ errors.time_slot }}</p>{% endif %}
+        </div>
+
+        <div class="h-px mb-8" style="background:rgba(212,132,154,0.1);"></div>
+
+        <!-- ── ÉTAPE 3 : Contact ── -->
+        <div class="mb-8">
+          <h2 class="font-serif text-xl font-medium mb-5 flex items-center gap-3" style="color:#2A1A20;">
+            <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0"
+                  style="background:linear-gradient(135deg,#E8A0B4,#D4849A);">3</span>
+            Vos coordonnées
+          </h2>
+          <div class="space-y-5">
+            <div>
+              <label class="form-label" for="name">Nom complet <span style="color:#EF4444">*</span></label>
+              <input type="text" id="name" name="name"
+                     class="form-input {% if errors.name %}error{% endif %}"
+                     placeholder="Marie Dupont" value="{{ form_data.name or '' }}"
+                     required autocomplete="name" />
+              {% if errors.name %}<p class="error-msg" role="alert">{{ errors.name }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="form-label" for="phone">Téléphone <span style="color:#EF4444">*</span></label>
+              <input type="tel" id="phone" name="phone"
+                     class="form-input {% if errors.phone %}error{% endif %}"
+                     placeholder="+32 4XX XXX XXX" value="{{ form_data.phone or '' }}"
+                     required autocomplete="tel" />
+              {% if errors.phone %}<p class="error-msg" role="alert">{{ errors.phone }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="form-label" for="email">Email <span class="font-normal" style="color:#C4A8B0;">(optionnel)</span></label>
+              <input type="email" id="email" name="email"
+                     class="form-input" placeholder="marie@exemple.be"
+                     value="{{ form_data.email or '' }}" autocomplete="email" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Acompte notice — Stripe placeholder -->
+        <div class="mb-8 p-5 rounded-2xl" style="background:rgba(242,197,208,0.12); border:1px solid rgba(212,132,154,0.2);">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="1.5">
+              <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>
+            </svg>
+            <div>
+              <p class="text-sm font-medium mb-1" style="color:#D4849A;">Acompte de 10€</p>
+              <p class="text-xs" style="color:#8A6070;">Le paiement de l'acompte sera disponible prochainement via carte bancaire.
+              <!-- TODO: Stripe integration --></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Récapitulatif -->
+        <div class="mb-8 p-5 rounded-2xl hidden" id="booking-summary"
+             style="background:rgba(242,197,208,0.15); border:1px solid rgba(212,132,154,0.2);">
+          <p class="text-sm font-medium mb-3" style="color:#D4849A;">Récapitulatif</p>
+          <div class="space-y-2 text-sm" style="color:#8A6070;">
+            <div class="flex justify-between">
+              <span>Date</span><span id="summary-date" style="color:#2A1A20;">—</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Heure</span><span id="summary-time" style="color:#2A1A20;">—</span>
+            </div>
+            <div class="flex justify-between border-t pt-2" style="border-color:rgba(212,132,154,0.15);">
+              <span class="font-medium">Total</span>
+              <span id="summary-price" class="font-semibold" style="color:#D4849A;">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" id="submit-btn"
+                class="w-full py-4 rounded-2xl text-base font-semibold text-white cursor-pointer transition-all duration-200 hover:opacity-90"
+                style="background:linear-gradient(135deg,#E8A0B4 0%,#D4849A 100%); box-shadow:0 4px 20px rgba(212,132,154,0.3);">
+          Confirmer la réservation
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // ── Config ──────────────────────────────────────────
+  const TODAY     = new Date(); TODAY.setHours(0,0,0,0);
+  const MAX_DATE  = new Date(TODAY); MAX_DATE.setDate(TODAY.getDate() + 60);
+  const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const DAYS_FR   = ['Lu','Ma','Me','Je','Ve','Sa','Di'];
+
+  let currentYear  = TODAY.getFullYear();
+  let currentMonth = TODAY.getMonth();
+  let selectedDate = null;
+  let currentPrice = null;
+
+  // Pre-fill if form had errors
+  const prefilledDate = '{{ form_data.date or "" }}';
+  if (prefilledDate) {
+    const [y, m, d] = prefilledDate.split('-').map(Number);
+    selectedDate = new Date(y, m - 1, d);
+    currentYear  = y;
+    currentMonth = m - 1;
+  }
+
+  // ── Calendar render ─────────────────────────────────
+  function renderCalendar() {
+    const title = document.getElementById('cal-title');
+    const grid  = document.getElementById('cal-grid');
+
+    title.textContent = `${MONTHS_FR[currentMonth]} ${currentYear}`;
+    grid.innerHTML = '';
+
+    // Day names header
+    DAYS_FR.forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'cal-day-name';
+      el.textContent = d;
+      grid.appendChild(el);
+    });
+
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    // Monday-based: 0=Mon ... 6=Sun
+    let startOffset = firstDay.getDay() - 1;
+    if (startOffset < 0) startOffset = 6;
+
+    const daysInMonth  = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const daysInPrev   = new Date(currentYear, currentMonth, 0).getDate();
+
+    // Previous month trailing days
+    for (let i = startOffset - 1; i >= 0; i--) {
+      const el = document.createElement('div');
+      el.className = 'cal-day other-month past';
+      el.textContent = daysInPrev - i;
+      grid.appendChild(el);
+    }
+
+    // Current month days
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(currentYear, currentMonth, day);
+      const el   = document.createElement('div');
+      el.className = 'cal-day';
+      el.textContent = day;
+
+      if (date < TODAY || date > MAX_DATE) {
+        el.classList.add('past');
+      } else {
+        el.addEventListener('click', () => selectDate(date, el));
+      }
+
+      if (date.toDateString() === TODAY.toDateString()) el.classList.add('today');
+
+      if (selectedDate && date.toDateString() === selectedDate.toDateString()) {
+        el.classList.add('selected');
+      }
+
+      grid.appendChild(el);
+    }
+
+    // Next month leading days
+    const total = startOffset + daysInMonth;
+    const trailing = total % 7 === 0 ? 0 : 7 - (total % 7);
+    for (let i = 1; i <= trailing; i++) {
+      const el = document.createElement('div');
+      el.className = 'cal-day other-month past';
+      el.textContent = i;
+      grid.appendChild(el);
+    }
+
+    // Disable prev nav if we're already on today's month
+    document.getElementById('cal-prev').style.opacity =
+      (currentYear === TODAY.getFullYear() && currentMonth === TODAY.getMonth()) ? '0.3' : '1';
+  }
+
+  // ── Select a date ────────────────────────────────────
+  async function selectDate(date, el) {
+    selectedDate = date;
+    document.querySelectorAll('.cal-day').forEach(d => d.classList.remove('selected'));
+    el.classList.add('selected');
+
+    const iso = toISO(date);
+    document.getElementById('date_input').value = iso;
+
+    // Show date label
+    const disp = document.getElementById('selected-date-display');
+    disp.classList.remove('hidden');
+    disp.classList.add('flex');
+    document.getElementById('selected-date-text').textContent =
+      date.toLocaleDateString('fr-BE', { weekday:'long', day:'numeric', month:'long' });
+
+    // Fetch price
+    try {
+      const r    = await fetch(`/api/price?date=${iso}`);
+      const data = await r.json();
+      currentPrice = data.price;
+      const label = data.is_promo ? `${data.price}€ (promo)` : `${data.price}€`;
+      document.getElementById('price-display').textContent = '· ' + label;
+      document.getElementById('summary-price').textContent = label;
+    } catch(e) {}
+
+    // Fetch availability & show slots
+    try {
+      const r     = await fetch(`/api/availability?date=${iso}`);
+      const avail = await r.json();
+
+      document.getElementById('slots-placeholder').style.display = 'none';
+      const container = document.getElementById('slots-container');
+      container.style.display = 'grid';
+
+      document.querySelectorAll('.slot-btn').forEach(btn => {
+        const available = avail[btn.dataset.slot];
+        btn.disabled = !available;
+        if (!available) {
+          btn.classList.remove('selected');
+          if (document.getElementById('time_slot_input').value === btn.dataset.slot) {
+            document.getElementById('time_slot_input').value = '';
+          }
+        }
+      });
+    } catch(e) {}
+
+    updateSummary();
+  }
+
+  // ── Select a time slot ───────────────────────────────
+  function selectSlot(slot, btn) {
+    if (btn.disabled) return;
+    document.querySelectorAll('.slot-btn').forEach(b => {
+      b.classList.remove('selected');
+      b.setAttribute('aria-checked', 'false');
+    });
+    btn.classList.add('selected');
+    btn.setAttribute('aria-checked', 'true');
+    document.getElementById('time_slot_input').value = slot;
+    document.getElementById('summary-time').textContent = slot;
+    updateSummary();
+  }
+
+  // ── Update summary block ─────────────────────────────
+  function updateSummary() {
+    const dateVal = document.getElementById('date_input').value;
+    const timeVal = document.getElementById('time_slot_input').value;
+    const summary = document.getElementById('booking-summary');
+    if (dateVal && timeVal) {
+      summary.classList.remove('hidden');
+      const d = new Date(dateVal + 'T12:00:00');
+      document.getElementById('summary-date').textContent =
+        d.toLocaleDateString('fr-BE', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    }
+  }
+
+  // ── Helpers ──────────────────────────────────────────
+  function toISO(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  // ── Nav buttons ──────────────────────────────────────
+  document.getElementById('cal-prev').addEventListener('click', () => {
+    if (currentYear === TODAY.getFullYear() && currentMonth === TODAY.getMonth()) return;
+    currentMonth--;
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    renderCalendar();
+  });
+  document.getElementById('cal-next').addEventListener('click', () => {
+    currentMonth++;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    renderCalendar();
+  });
+
+  // ── Init ─────────────────────────────────────────────
+  renderCalendar();
+
+  // Re-trigger if pre-filled (form error re-render)
+  if (prefilledDate && selectedDate) {
+    // Find the DOM element and trigger availability
+    setTimeout(async () => {
+      const iso = prefilledDate;
+      try {
+        const r     = await fetch(`/api/availability?date=${iso}`);
+        const avail = await r.json();
+        document.getElementById('slots-placeholder').style.display = 'none';
+        document.getElementById('slots-container').style.display = 'grid';
+        document.querySelectorAll('.slot-btn').forEach(btn => {
+          btn.disabled = avail[btn.dataset.slot] === false;
+        });
+      } catch(e) {}
+
+      const disp = document.getElementById('selected-date-display');
+      disp.classList.remove('hidden');
+      disp.classList.add('flex');
+      document.getElementById('selected-date-text').textContent =
+        selectedDate.toLocaleDateString('fr-BE', { weekday:'long', day:'numeric', month:'long' });
+
+      updateSummary();
+      document.getElementById('booking-summary').style.display = 'block';
+    }, 0);
+  }
+
+  // ── Toast ─────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 5000);
+  }
+
+  // ── Submit guard ─────────────────────────────────────
+  document.getElementById('booking-form').addEventListener('submit', function(e) {
+    if (!document.getElementById('date_input').value) {
+      e.preventDefault();
+      showToast('Veuillez sélectionner une date.');
+      return;
+    }
+    if (!document.getElementById('time_slot_input').value) {
+      e.preventDefault();
+      showToast('Veuillez sélectionner un créneau horaire.');
+      return;
+    }
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Réservation en cours…';
+    btn.style.opacity = '0.7';
+  });
+</script>
+{% endblock %}
