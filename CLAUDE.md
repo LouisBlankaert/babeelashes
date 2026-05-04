@@ -2,59 +2,66 @@
 
 ## Business
 - Nom : Babelash
-- Service : allongement de cils uniquement
+- Service : rehaussement de cils uniquement
 - Ville : Bruxelles
 - Horaires : lundi au dimanche, 10h - 18h
-- Durée par créneau : 1h30
+- Durée par créneau : 1h
 - Créneaux : 10:00, 11:30, 13:00, 14:30, 16:00, 17:30
 - Site pour un vrai client — tout est en production
 
 ## Prix
 - Semaine (lundi-samedi) : 35€
 - Dimanche : 40€
-- Promotion en cours : 20€ jusqu'au 30 avril 2026
+- Option teinture : +5€ (sélectionnable dans le formulaire de réservation)
+- Promotion **expirée** : 20€ était valable jusqu'au 30 avril 2026 (plus affichée)
+- Logique : `promo_active = date.today() <= PROMO_UNTIL` passé au template
 
-## Acompte Stripe
+## Acompte virement bancaire
 - Montant : 10€ (variable `DEPOSIT` dans app.py)
-- Clés **live** du client dans Railway (ne jamais les mettre en local)
-- Clés **test** en local dans `.env` pour développement
-- Flow : booking form → session Flask → `/create-checkout-session` → Stripe Checkout → `/payment-success` → DB → `/confirmation`
-- En cas d'annulation : `/payment-cancel`
-- Webhook : `/webhook` · event `checkout.session.completed` · `STRIPE_WEBHOOK_SECRET` dans Railway
+- IBAN : BE94 3632 6175 1914 (variable `BANK_IBAN`)
+- Flow : booking form → sauvegarde directe en DB (`paid=True`) → `/confirmation` avec IBAN
+- Communication demandée : "Babeelashes + nom de la cliente"
+- La propriétaire vérifie manuellement les virements sur son compte
+- Stripe entièrement supprimé
+
+## Option teinture
+- Prix : +5€ (variable `PRICE_TEINTURE` dans app.py)
+- Toggle dans le formulaire étape 4
+- Champ `teinture` (boolean) dans le modèle Reservation
+- Affiché dans la confirmation et dans l'admin (modal + pilule calendrier "· T")
+- **Migration Railway déjà faite** : `ALTER TABLE reservations ADD COLUMN teinture BOOLEAN DEFAULT FALSE`
+
+## Notifications
+- **À faire** : mettre en place une notification email ou autre quand un RDV est enregistré
+- Outlook SMTP testé mais bloqué (SmtpClientAuthentication disabled)
+- Solution recommandée : Gmail avec mot de passe d'application
+- Le code de notification a été supprimé — à réimplémenter quand prêt
 
 ## Pages
 - `/` → landing page
-- `/booking` → calendrier custom + créneaux + formulaire
-- `/create-checkout-session` → redirect Stripe Checkout
-- `/payment-success?session_id=` → vérification paiement + save DB + redirect confirmation
-- `/payment-cancel` → page annulation
-- `/payment-error` → erreur Stripe
-- `/confirmation` → résumé réservation
+- `/booking` → calendrier custom + créneaux + formulaire → sauvegarde directe en DB
+- `/contact` → page contact avec lien Instagram DM (@babeelashes)
+- `/confirmation` → résumé RDV + IBAN pour virement acompte 10€
 - `/admin` → dashboard admin (agenda mensuel, déplacement + suppression RDV)
 - `/admin/login` → login admin
-- `/webhook` → Stripe webhook (POST)
 
 ## Stack
 - Python 3 + Flask + SQLAlchemy + Gunicorn
 - SQLite en dev (`instance/babelash.db`), PostgreSQL en prod (Railway)
 - Jinja2 + Tailwind CSS via CDN
 - Google Fonts : Playfair Display + Inter
-- Stripe 11.x
 
 ## Modèle Reservation
-- Champs : id, name, phone, email, date, time_slot, price, stripe_session_id, paid, created_at
-- `paid=True` requis pour qu'un créneau soit considéré occupé
+- Champs : id, name, phone, email, date, time_slot, price, teinture, paid, created_at
+- `paid=True` mis automatiquement à la sauvegarde (pas de paiement en ligne)
 - Les créneaux passés aujourd'hui sont grisés (fuseau Europe/Brussels via zoneinfo)
 
 ## Lancer le projet (dev)
 ```bash
-cd ~/Desktop/babelash && source venv/bin/activate && python app.py
-```
-Ou directement :
-```bash
 venv/bin/python app.py
 ```
 Site local : http://127.0.0.1:5000
+- Si port 5000 occupé : désactiver AirPlay Receiver dans Réglages système → Général → AirDrop et Handoff
 
 ## Installer les dépendances
 ```bash
@@ -71,9 +78,12 @@ venv/bin/pip install -r requirements.txt
 - URL local : http://127.0.0.1:5000/admin
 - Mot de passe dans `.env` : `babeelash2026`
 - Fonctions : voir RDV du mois, déplacer un RDV, supprimer un RDV
+- Les RDV avec teinture affichent "· T" sur la pilule et un badge dans le modal
 
 ## Réseaux sociaux
 - TikTok et Instagram affichés sur la landing page
+- Lien "Contact" dans la nav → `/contact` (page dédiée avec bouton DM Instagram)
+- Instagram : https://instagram.com/babeelashes · TikTok : https://tiktok.com/@babeelashes
 
 ## Production (tout est déployé)
 
@@ -88,20 +98,22 @@ venv/bin/pip install -r requirements.txt
 - Start command : `gunicorn app:app --bind 0.0.0.0:$PORT`
 - Plugin PostgreSQL connecté via `DATABASE_URL` (URL publique Railway)
 - Custom domain : `www.babeelashes.be` → port 8080
-- Variables Railway : SECRET_KEY, WHATSAPP_NUMBER, ADMIN_PASSWORD, STRIPE_SECRET_KEY, STRIPE_PUBLIC_KEY, STRIPE_WEBHOOK_SECRET, DATABASE_URL, FLASK_ENV=production
+- Variables Railway actives : SECRET_KEY, ADMIN_PASSWORD, BANK_IBAN, BANK_NAME, DATABASE_URL, FLASK_ENV=production
+- Variables à supprimer si pas encore fait : STRIPE_SECRET_KEY, STRIPE_PUBLIC_KEY, STRIPE_WEBHOOK_SECRET, WHATSAPP_NUMBER, ADMIN_EMAIL, MAIL_PASSWORD
 
 ### OVH DNS (babeelashes.be)
 - `www CNAME → 2t9q5aw4.up.railway.app.`
 - `_railway-verify.www TXT → railway-verify=...`
 - SSL géré automatiquement par Railway
 
-### Stripe (live)
-- Compte Stripe du client avec IBAN belge
-- Webhook configuré : https://www.babeelashes.be/webhook · event checkout.session.completed
-- `STRIPE_WEBHOOK_SECRET` dans Railway
-
 ### Déploiement continu
 - Push sur `main` → Railway redéploie automatiquement
+
+## À faire (prochaine session)
+- Notification automatique à la propriétaire lors d'un nouveau RDV
+  - Outlook SMTP bloqué (SmtpClientAuthentication disabled)
+  - → Créer un compte Gmail et utiliser SMTP Gmail avec mot de passe d'application
+  - Variables à ajouter : `ADMIN_EMAIL`, `MAIL_PASSWORD`
 
 ## Instructions
 - Use context7 for up to date documentation

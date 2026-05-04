@@ -199,6 +199,10 @@
           <div>
             <p class="text-xs" style="color:#8A6070;">Montant</p>
             <p id="modal-price" class="text-sm font-semibold" style="color:#D4849A;"></p>
+            <p id="modal-teinture" class="text-xs mt-0.5 hidden">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full"
+                    style="background:rgba(212,132,154,0.15); color:#B8607A;">+ Teinture</span>
+            </p>
           </div>
         </div>
       </div>
@@ -325,7 +329,7 @@
     rdvs.forEach(rdv => {
       const pill = document.createElement('div');
       pill.className = 'rdv-pill';
-      pill.innerHTML = `<span class="time">${rdv.time_slot}</span><span class="name-text">${rdv.name}</span>`;
+      pill.innerHTML = `<span class="time">${rdv.time_slot}</span><span class="name-text">${rdv.name}${rdv.teinture ? ' · T' : ''}</span>`;
       pill.addEventListener('click', () => openModal(rdv));
       cell.appendChild(pill);
     });
@@ -342,6 +346,8 @@
     document.getElementById('modal-time').textContent  = rdv.time_slot;
     document.getElementById('modal-phone').textContent = rdv.phone;
     document.getElementById('modal-price').textContent = rdv.price + '€';
+    const teintureEl = document.getElementById('modal-teinture');
+    rdv.teinture ? teintureEl.classList.remove('hidden') : teintureEl.classList.add('hidden');
 
     const emailRow = document.getElementById('modal-email-row');
     if (rdv.email) {

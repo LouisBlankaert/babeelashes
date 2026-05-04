@@ -1,9 +1,7 @@
 import os
-import urllib.parse
 from datetime import date, timedelta
 from decimal import Decimal
 
-import stripe
 from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 from functools import wraps
@@ -21,24 +19,20 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
-STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY", "")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
-
 
 # ── Model ────────────────────────────────────────────────────────
 class Reservation(db.Model):
     __tablename__ = "reservations"
-    id               = db.Column(db.Integer, primary_key=True)
-    name             = db.Column(db.String(120), nullable=False)
-    phone            = db.Column(db.String(30),  nullable=False)
-    email            = db.Column(db.String(120), nullable=True)
-    date             = db.Column(db.Date,        nullable=False)
-    time_slot        = db.Column(db.String(10),  nullable=False)
-    price            = db.Column(db.Numeric(6, 2), nullable=False)
-    stripe_session_id = db.Column(db.String(200), nullable=True, unique=True)
-    paid             = db.Column(db.Boolean, default=False, nullable=False)
-    created_at       = db.Column(db.DateTime, server_default=db.func.now())
+    id         = db.Column(db.Integer, primary_key=True)
+    name       = db.Column(db.String(120), nullable=False)
+    phone      = db.Column(db.String(30),  nullable=False)
+    email      = db.Column(db.String(120), nullable=True)
+    date       = db.Column(db.Date,        nullable=False)
+    time_slot  = db.Column(db.String(10),  nullable=False)
+    price      = db.Column(db.Numeric(6, 2), nullable=False)
+    teinture   = db.Column(db.Boolean, default=False, nullable=True)
+    paid       = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
 
 
 # ── Config ───────────────────────────────────────────────────────
@@ -48,10 +42,14 @@ SLOT_DURATION = 90
 PRICE_WEEK    = Decimal("35.00")
 PRICE_WEEKEND = Decimal("40.00")
 PRICE_PROMO   = Decimal("20.00")
-DEPOSIT       = Decimal("10.00")
-PROMO_UNTIL   = date(2026, 4, 30)
-WHATSAPP_NUMBER = os.getenv("WHATSAPP_NUMBER", "32XXXXXXXXX")
-ADMIN_PASSWORD  = os.getenv("ADMIN_PASSWORD", "admin")
+DEPOSIT         = Decimal("10.00")
+PRICE_TEINTURE  = Decimal("5.00")
+PROMO_UNTIL     = date(2026, 4, 30)
+BANK_IBAN        = os.getenv("BANK_IBAN", "BE94 3632 6175 1914")
+BANK_NAME        = os.getenv("BANK_NAME", "Babeelashes")
+ADMIN_PASSWORD   = os.getenv("ADMIN_PASSWORD", "admin")
+
+
 
 
 def login_required(f):
@@ -94,7 +92,13 @@ def index():
     all_files = [f for f in os.listdir(img_dir)
                  if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp", ".mp4", ".mov", ".webm"))]
     media = sorted(all_files, key=lambda f: (0 if os.path.splitext(f)[1].lower() in VIDEO_EXTS else 1, f))
-    return render_template("index.html", media=media)
+    promo_active = date.today() <= PROMO_UNTIL
+    return render_template("index.html", media=media, promo_active=promo_active)
+
+
+@app.route("/contact")
+def contact():
+    return render_template("contact.html")
 
 
 @app.route("/booking", methods=["GET", "POST"])
@@ -129,17 +133,22 @@ def booking():
             errors["time_slot"] = "Créneau invalide"
 
         if not errors:
-            price    = get_price(booking_date)
+            teinture = request.form.get("teinture") == "1"
+            price    = get_price(booking_date) + (PRICE_TEINTURE if teinture else Decimal("0"))
             existing = Reservation.query.filter_by(date=booking_date, time_slot=time_slot, paid=True).first()
             if existing:
                 errors["time_slot"] = "Ce créneau est déjà pris"
             else:
-                # Store pending booking in session before Stripe redirect
-                session["pending_booking"] = {
-                    "name": name, "phone": phone, "email": email or "",
-                    "date": date_str, "time_slot": time_slot, "price": str(price),
-                }
-                return redirect(url_for("create_checkout_session"))
+                db.session.add(Reservation(
+                    name=name, phone=phone, email=email or None,
+                    date=booking_date, time_slot=time_slot, price=price,
+                    teinture=teinture, paid=True,
+                ))
+                db.session.commit()
+                return redirect(url_for("confirmation",
+                                        name=name, date=date_str,
+                                        time=time_slot, price=str(price),
+                                        teinture="1" if teinture else "0"))
 
     return render_template(
         "booking.html",
@@ -147,107 +156,7 @@ def booking():
         min_date=date.today().isoformat(),
         max_date=(date.today() + timedelta(days=60)).isoformat(),
         price_week=PRICE_WEEK, price_weekend=PRICE_WEEKEND,
-        price_promo=PRICE_PROMO, promo_until=PROMO_UNTIL,
     )
-
-
-@app.route("/create-checkout-session")
-def create_checkout_session():
-    pending = session.get("pending_booking")
-    if not pending:
-        return redirect(url_for("booking"))
-
-    base_url = request.host_url.rstrip("/")
-    try:
-        checkout = stripe.checkout.Session.create(
-            payment_method_types=["card"],
-            line_items=[{
-                "price_data": {
-                    "currency": "eur",
-                    "product_data": {
-                        "name": "Acompte réservation — Babelash",
-                        "description": f"Extensions de cils · {pending['date']} à {pending['time_slot']}",
-                    },
-                    "unit_amount": int(DEPOSIT * 100),
-                },
-                "quantity": 1,
-            }],
-            mode="payment",
-            customer_email=pending["email"] or None,
-            success_url=f"{base_url}/payment-success?session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{base_url}/payment-cancel",
-        )
-        return redirect(checkout.url, code=303)
-    except stripe.error.StripeError as e:
-        return render_template("payment_error.html", error=str(e)), 500
-
-
-@app.route("/payment-success")
-def payment_success():
-    session_id = request.args.get("session_id", "")
-    pending    = session.pop("pending_booking", None)
-
-    if not session_id or not pending:
-        return redirect(url_for("booking"))
-
-    # Verify payment with Stripe
-    try:
-        checkout = stripe.checkout.Session.retrieve(session_id)
-        if checkout.payment_status != "paid":
-            return redirect(url_for("booking"))
-    except stripe.error.StripeError:
-        return redirect(url_for("booking"))
-
-    booking_date = date.fromisoformat(pending["date"])
-    price        = Decimal(pending["price"])
-
-    # Avoid duplicate saves if webhook already ran
-    existing = Reservation.query.filter_by(stripe_session_id=session_id).first()
-    if not existing:
-        db.session.add(Reservation(
-            name=pending["name"],
-            phone=pending["phone"],
-            email=pending["email"] or None,
-            date=booking_date,
-            time_slot=pending["time_slot"],
-            price=price,
-            stripe_session_id=session_id,
-            paid=True,
-        ))
-        db.session.commit()
-
-    return redirect(url_for("confirmation",
-                            name=pending["name"],
-                            date=pending["date"],
-                            time=pending["time_slot"],
-                            price=str(price)))
-
-
-@app.route("/payment-cancel")
-def payment_cancel():
-    return render_template("payment_cancel.html")
-
-
-@app.route("/webhook", methods=["POST"])
-def stripe_webhook():
-    payload = request.get_data()
-    sig     = request.headers.get("Stripe-Signature", "")
-
-    try:
-        event = stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET)
-    except (ValueError, stripe.error.SignatureVerificationError):
-        return "", 400
-
-    if event["type"] == "checkout.session.completed":
-        checkout  = event["data"]["object"]
-        session_id = checkout["id"]
-        meta      = checkout.get("metadata", {})
-
-        # Only process if not already saved via success redirect
-        if not Reservation.query.filter_by(stripe_session_id=session_id).first():
-            pass  # pending_booking is in Flask session — can't access it in webhook
-
-    return "", 200
 
 
 @app.route("/api/price")
@@ -291,19 +200,18 @@ def confirmation():
     booking_date = request.args.get("date", "")
     time         = request.args.get("time", "")
     price        = request.args.get("price", "")
-
-    message = (f"Bonjour, je viens de réserver chez Babelash.\n"
-               f"Nom : {name}\nDate : {booking_date}\nHeure : {time}\n"
-               f"Montant : {price}€\n\nMerci de confirmer ma réservation !")
-    wa_url = f"https://wa.me/{WHATSAPP_NUMBER}?text={urllib.parse.quote(message)}"
+    teinture     = request.args.get("teinture") == "1"
 
     try:
         remaining = f"{Decimal(price) - DEPOSIT:.2f}"
     except Exception:
         remaining = price
 
-    return render_template("confirmation.html", name=name, booking_date=booking_date,
-                           time=time, price=price, remaining=remaining, wa_url=wa_url)
+    return render_template("confirmation.html",
+                           name=name, booking_date=booking_date,
+                           time=time, price=price, remaining=remaining,
+                           iban=BANK_IBAN, bank_name=BANK_NAME,
+                           deposit=str(DEPOSIT), teinture=teinture)
 
 
 @app.route("/admin/login", methods=["GET", "POST"])
@@ -353,6 +261,7 @@ def api_admin_reservations():
             "date":      r.date.isoformat(),
             "time_slot": r.time_slot,
             "price":     str(r.price),
+            "teinture":  bool(r.teinture),
         } for r in reservations])
     except (ValueError, TypeError):
         return jsonify({"error": "Invalid params"}), 400

@@ -44,14 +44,14 @@
 
     <!-- Title -->
     <h1 class="font-serif text-4xl md:text-5xl font-semibold mb-3" style="color:#2A1A20;">
-      C'est <em class="text-gold-gradient not-italic">confirmé !</em>
+      Rendez-vous <em class="text-rose-gradient not-italic">enregistré !</em>
     </h1>
-    <p class="text-[#C4B08A] mb-10">
-      Votre rendez-vous a bien été enregistré.
+    <p class="mb-10" style="color:#8A6070;">
+      Votre rendez-vous a bien été pris. Lisez les instructions ci-dessous.
     </p>
 
     <!-- Booking details card -->
-    <div class="rounded-3xl p-8 text-left mb-8"
+    <div class="rounded-3xl p-8 text-left mb-6"
          style="background: #FFFFFF; border: 1px solid rgba(212,132,154,0.2); box-shadow: 0 4px 30px rgba(212,132,154,0.08);">
       <p class="text-xs tracking-widest uppercase mb-5" style="color:#D4849A;">Détails du rendez-vous</p>
 
@@ -105,19 +105,64 @@
           <div>
             <p class="text-xs mb-0.5" style="color:#8A6070;">Montant total</p>
             <p class="font-semibold text-lg" style="color:#D4849A;">{{ price }}€</p>
-            <div class="mt-1 flex items-center gap-3 text-xs" style="color:#8A6070;">
-              <span>Acompte : <strong style="color:#2A1A20;">10€</strong></span>
-              <span style="color:#EDE0D8;">·</span>
-              <span>Reste à payer : <strong style="color:#D4849A;">{{ remaining }}€</strong></span>
-            </div>
+            {% if teinture %}
+            <p class="text-xs mt-0.5 mb-1">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                    style="background:rgba(212,132,154,0.15); color:#B8607A;">
+                + Teinture des cils (+5€)
+              </span>
+            </p>
+            {% endif %}
+            <p class="text-xs mt-0.5" style="color:#8A6070;">Acompte : <strong style="color:#2A1A20;">{{ deposit }}€</strong> · Reste sur place : <strong style="color:#2A1A20;">{{ remaining }}€</strong></p>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Virement IBAN -->
+    <div class="rounded-3xl p-7 text-left mb-8"
+         style="background: linear-gradient(135deg, rgba(242,197,208,0.25) 0%, rgba(247,239,232,0.4) 100%); border: 1px solid rgba(212,132,154,0.3);">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+             style="background: linear-gradient(135deg, #E8A0B4, #D4849A);">
+          <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>
+          </svg>
+        </div>
+        <p class="font-serif text-lg font-semibold" style="color:#2A1A20;">Acompte de {{ deposit }}€ à virer</p>
+      </div>
+
+      <p class="text-sm mb-5" style="color:#8A6070;">
+        Pour confirmer votre rendez-vous, merci d'effectuer un virement bancaire de <strong style="color:#2A1A20;">{{ deposit }}€</strong> dans les 24h.
+      </p>
+
+      <div class="space-y-3">
+        <div class="flex items-center justify-between p-3 rounded-xl" style="background: rgba(255,255,255,0.7); border: 1px solid rgba(212,132,154,0.15);">
+          <span class="text-xs font-medium uppercase tracking-widest" style="color:#8A6070;">Bénéficiaire</span>
+          <span class="font-semibold text-sm" style="color:#2A1A20;">{{ bank_name }}</span>
+        </div>
+        <div class="flex items-center justify-between p-3 rounded-xl" style="background: rgba(255,255,255,0.7); border: 1px solid rgba(212,132,154,0.15);">
+          <span class="text-xs font-medium uppercase tracking-widest" style="color:#8A6070;">IBAN</span>
+          <span class="font-semibold text-sm font-mono" style="color:#2A1A20;">{{ iban }}</span>
+        </div>
+        <div class="flex items-center justify-between p-3 rounded-xl" style="background: rgba(255,255,255,0.7); border: 1px solid rgba(212,132,154,0.15);">
+          <span class="text-xs font-medium uppercase tracking-widest" style="color:#8A6070;">Montant</span>
+          <span class="font-semibold text-sm" style="color:#D4849A;">{{ deposit }}€</span>
+        </div>
+        <div class="flex items-center justify-between p-3 rounded-xl" style="background: rgba(255,255,255,0.7); border: 1px solid rgba(212,132,154,0.15);">
+          <span class="text-xs font-medium uppercase tracking-widest" style="color:#8A6070;">Communication</span>
+          <span class="font-semibold text-sm" style="color:#2A1A20;">Babeelashes {{ name }}</span>
+        </div>
+      </div>
+
+      <p class="text-xs mt-4" style="color:#C4A8B0;">
+        Le solde restant ({{ remaining }}€) sera réglé directement sur place le jour du rendez-vous.
+      </p>
+    </div>
+
     <a href="/"
        class="inline-flex items-center gap-2 text-sm cursor-pointer transition-colors duration-200 hover:text-[#D4849A]"
-       style="color: #C4B08A;">
+       style="color: #8A6070;">
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
       Retour à l'accueil
     </a>
@@ -125,4 +170,3 @@
   </div>
 </div>
 {% endblock %}
-

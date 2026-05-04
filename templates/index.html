@@ -112,16 +112,18 @@
     </h1>
 
     <p class="text-lg md:text-xl max-w-xl mx-auto mb-10 leading-relaxed" style="color:#8A6070; font-weight:300;">
-      Rehaussement de cils professionnelles à Bruxelles.<br class="hidden sm:block"/>
-      Un résultat naturel, en seulement 1h30.
+      Rehaussement de cils professionnel à Bruxelles.<br class="hidden sm:block"/>
+      Un regard sublimé, naturellement.
     </p>
 
     <!-- Promo badge -->
+    {% if promo_active %}
     <div class="inline-flex items-center gap-3 px-5 py-3 rounded-2xl mb-10"
          style="background: rgba(242,197,208,0.3); border: 1px solid rgba(212,132,154,0.3);">
       <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="#D4849A"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
       <span class="text-sm font-medium" style="color:#B8607A;">Promotion — <strong>20€</strong> seulement jusqu'au 30 avril 2026</span>
     </div>
+    {% endif %}
 
     <!-- CTAs -->
     <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -151,7 +153,7 @@
   <div class="max-w-6xl mx-auto px-6">
     <div class="flex flex-wrap items-center justify-center gap-10 text-center">
       <div>
-        <p class="font-serif text-3xl font-semibold text-rose-gradient">1h30</p>
+        <p class="font-serif text-3xl font-semibold text-rose-gradient">1h</p>
         <p class="text-xs mt-1 tracking-wider uppercase" style="color:#8A6070;">Durée de la pose</p>
       </div>
       <div class="w-px h-10 hidden sm:block" style="background: rgba(212,132,154,0.2);"></div>
@@ -173,10 +175,11 @@
       <h2 class="font-serif text-4xl md:text-5xl font-semibold mb-4" style="color:#2A1A20;">
         Un seul service,<br/><em class="text-rose-gradient not-italic">l'excellence</em>
       </h2>
-      <p style="color:#8A6070;" class="max-w-md mx-auto">Rehaussement de cils – pose complète · 1h30</p>
+      <p style="color:#8A6070;" class="max-w-md mx-auto">Rehaussement de cils – pose complète · 1h</p>
     </div>
 
     <!-- Promo card -->
+    {% if promo_active %}
     <div class="reveal mb-6 flex justify-center">
       <div class="pricing-card relative rounded-3xl p-8 w-full max-w-sm cursor-pointer"
            style="background: linear-gradient(135deg, rgba(242,197,208,0.4) 0%, rgba(247,239,232,0.6) 100%); border: 1px solid rgba(212,132,154,0.35);">
@@ -197,6 +200,7 @@
         </div>
       </div>
     </div>
+    {% endif %}
 
     <!-- Semaine / Weekend -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 reveal">
@@ -205,9 +209,9 @@
            style="background: #FFFFFF; border: 1px solid rgba(212,132,154,0.15); box-shadow: 0 2px 20px rgba(212,132,154,0.06);">
         <p class="text-xs tracking-widest uppercase mb-4" style="color:#D4849A;">{{ label }}</p>
         <p class="font-serif text-5xl font-semibold mb-1" style="color:#2A1A20;">{{ price }}</p>
-        <p class="text-sm mb-6" style="color:#8A6070;">Après la promotion</p>
+        <p class="text-sm mb-6" style="color:#8A6070;">Tarif standard</p>
         <ul class="space-y-3 text-sm mb-8" style="color:#8A6070;">
-          {% for item in [days, "Pose complète · 1h30", "10h – 18h"] %}
+          {% for item in [days, "Pose complète · 1h", "10h – 18h"] %}
           <li class="flex items-center gap-2">
             <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
             {{ item }}
@@ -223,8 +227,28 @@
       {% endfor %}
     </div>
 
+    <!-- Option teinture -->
+    <div class="mt-6 reveal">
+      <div class="flex items-center justify-between p-5 rounded-2xl"
+           style="background: rgba(242,197,208,0.15); border: 1px solid rgba(212,132,154,0.2);">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+               style="background: linear-gradient(135deg, #E8A0B4, #D4849A);">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"/><path d="M8 12s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-semibold" style="color:#2A1A20;">Option teinture des cils</p>
+            <p class="text-xs mt-0.5" style="color:#8A6070;">Intensifie et définit le regard · disponible à la réservation</p>
+          </div>
+        </div>
+        <span class="text-base font-bold shrink-0 ml-4" style="color:#D4849A;">+5€</span>
+      </div>
+    </div>
+
     <!-- Acompte notice -->
-    <div class="mt-8 flex items-start gap-3 p-5 rounded-2xl reveal"
+    <div class="mt-4 flex items-start gap-3 p-5 rounded-2xl reveal"
          style="background: rgba(242,197,208,0.15); border: 1px solid rgba(212,132,154,0.2);">
       <svg class="w-5 h-5 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="1.5">
         <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
@@ -252,7 +276,7 @@
       {% for num, title, desc in [
         ("01", "Choisissez votre date", "Sélectionnez un jour et un créneau disponible selon vos envies."),
         ("02", "Réservation confirmée", "Votre rendez-vous est enregistré instantanément."),
-        ("03", "Profitez de vos cils",  "Arrivez détendues. 1h30 plus tard, vous ressortez sublimée.")
+        ("03", "Profitez de vos cils",  "Arrivez détendues. 1h plus tard, vous ressortez sublimée.")
       ] %}
       <div class="text-center">
         <div class="inline-flex items-center justify-center w-14 h-14 rounded-full mb-5"
@@ -316,7 +340,7 @@
           Votre beauté,<br/><em class="text-rose-gradient not-italic">notre passion</em>
         </h2>
         <p class="leading-relaxed mb-6" style="color:#8A6070;">
-          Chez Babeelashes, nous croyons que chaque regard mérite d'être sublimé. Basées à Bruxelles, nous vous accueillons 7 jours sur 7 pour une pose d'rehaussement de cils personnalisée, en seulement 1h30.
+          Chez Babeelashes, nous croyons que chaque regard mérite d'être sublimé. Basées à Bruxelles, nous vous accueillons 7 jours sur 7 pour une pose de rehaussement de cils personnalisée, en seulement 1h.
         </p>
         <p class="leading-relaxed mb-10" style="color:#8A6070;">
           Notre technique douce et précise garantit un résultat naturel et durable, adapté à la morphologie unique de votre œil.
@@ -324,9 +348,9 @@
         <div class="grid grid-cols-2 gap-4">
           {% for title, desc in [
             ("Technique douce",  "Pose non agressive, respectueuse de vos cils naturels"),
-            ("Résultat naturel", "Un regard sublimé, comme si c'était les vôtres"),
+            ("Résultat naturel", "Un regard sublimé naturellement"),
             ("Bruxelles",        "Accessible et disponible 7j/7"),
-            ("1h30",       "Efficace, rapide et professionnel")
+            ("1h",         "Efficace, rapide et professionnel")
           ] %}
           <div class="p-4 rounded-2xl" style="background: rgba(242,197,208,0.15); border: 1px solid rgba(212,132,154,0.15);">
             <p class="text-sm font-medium mb-1" style="color:#D4849A;">{{ title }}</p>
@@ -380,8 +404,7 @@
           Réservez votre pose<br/><em class="text-rose-gradient not-italic">dès maintenant</em>
         </h2>
         <p class="mb-8 max-w-md mx-auto" style="color:#8A6070;">
-          Disponible 7j/7 de 10h à 18h à Bruxelles.<br/>
-          Promotion à 20€ jusqu'au 30 avril 2026.
+          Disponible 7j/7 de 10h à 18h à Bruxelles.
         </p>
         <a href="/booking"
            class="cta-glow inline-block px-10 py-4 rounded-2xl text-base font-semibold text-white cursor-pointer"
@@ -398,7 +421,7 @@
   <a href="/booking"
      class="block w-full py-4 rounded-2xl text-base font-semibold text-white text-center cursor-pointer"
      style="background: linear-gradient(135deg, #E8A0B4 0%, #D4849A 100%); box-shadow: 0 8px 30px rgba(212,132,154,0.4);">
-    Réserver — 20€
+    Réserver maintenant
   </a>
 </div>
 
