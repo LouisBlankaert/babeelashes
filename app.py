@@ -125,8 +125,8 @@ def booking():
         else:
             try:
                 booking_date = date.fromisoformat(date_str)
-                if booking_date < date.today():
-                    errors["date"] = "La date doit être dans le futur"
+                if booking_date <= date.today():
+                    errors["date"] = "La réservation doit être effectuée au moins 24h à l'avance"
             except ValueError:
                 errors["date"] = "Date invalide"
         if not time_slot or time_slot not in TIME_SLOTS:
@@ -153,7 +153,7 @@ def booking():
     return render_template(
         "booking.html",
         slots=TIME_SLOTS, errors=errors, form_data=form_data,
-        min_date=date.today().isoformat(),
+        min_date=(date.today() + timedelta(days=1)).isoformat(),
         max_date=(date.today() + timedelta(days=60)).isoformat(),
         price_week=PRICE_WEEK, price_weekend=PRICE_WEEKEND,
     )
