@@ -267,12 +267,18 @@
               {% if errors.name %}<p class="error-msg" role="alert">{{ errors.name }}</p>{% endif %}
             </div>
             <div>
-              <label class="form-label" for="phone">Téléphone <span style="color:#EF4444">*</span></label>
+              <label class="form-label" for="instagram">Instagram <span style="color:#EF4444">*</span></label>
+              <input type="text" id="instagram" name="instagram"
+                     class="form-input {% if errors.instagram %}error{% endif %}"
+                     placeholder="@tonpseudo" value="{{ ('@' + form_data.instagram) if form_data.instagram else '' }}" />
+              {% if errors.instagram %}<p class="error-msg" role="alert">{{ errors.instagram }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="form-label" for="phone">Téléphone <span class="font-normal" style="color:#C4A8B0;">(optionnel)</span></label>
               <input type="tel" id="phone" name="phone"
-                     class="form-input {% if errors.phone %}error{% endif %}"
+                     class="form-input"
                      placeholder="+32 4XX XXX XXX" value="{{ form_data.phone or '' }}"
-                     required autocomplete="tel" />
-              {% if errors.phone %}<p class="error-msg" role="alert">{{ errors.phone }}</p>{% endif %}
+                     autocomplete="tel" />
             </div>
             <div>
               <label class="form-label" for="email">Email <span class="font-normal" style="color:#C4A8B0;">(optionnel)</span></label>

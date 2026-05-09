@@ -176,6 +176,15 @@
         </div>
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background:rgba(242,197,208,0.2);">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          </div>
+          <div>
+            <p class="text-xs" style="color:#8A6070;">Instagram</p>
+            <p id="modal-instagram" class="text-sm font-medium" style="color:#2A1A20;"></p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3" id="modal-phone-row">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background:rgba(242,197,208,0.2);">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="1.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
           </div>
           <div>
@@ -344,10 +353,18 @@
     document.getElementById('modal-name').textContent  = rdv.name;
     document.getElementById('modal-date').textContent  = d.toLocaleDateString('fr-BE', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
     document.getElementById('modal-time').textContent  = rdv.time_slot;
-    document.getElementById('modal-phone').textContent = rdv.phone;
+    document.getElementById('modal-instagram').textContent = '@' + rdv.instagram;
     document.getElementById('modal-price').textContent = rdv.price + '€';
     const teintureEl = document.getElementById('modal-teinture');
     rdv.teinture ? teintureEl.classList.remove('hidden') : teintureEl.classList.add('hidden');
+
+    const phoneRow = document.getElementById('modal-phone-row');
+    if (rdv.phone) {
+      document.getElementById('modal-phone').textContent = rdv.phone;
+      phoneRow.style.display = 'flex';
+    } else {
+      phoneRow.style.display = 'none';
+    }
 
     const emailRow = document.getElementById('modal-email-row');
     if (rdv.email) {
@@ -366,6 +383,8 @@
     document.getElementById('edit-error').classList.add('hidden');
     document.getElementById('save-btn').textContent = 'Enregistrer le déplacement';
     document.getElementById('save-btn').disabled = false;
+    document.getElementById('delete-btn').textContent = 'Supprimer ce rendez-vous';
+    document.getElementById('delete-btn').disabled = false;
     selectedRdv = null;
   }
 

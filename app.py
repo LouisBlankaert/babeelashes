@@ -2,6 +2,8 @@ import os
 from datetime import date, timedelta
 from decimal import Decimal
 
+import resend
+
 from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 from functools import wraps
@@ -25,7 +27,8 @@ class Reservation(db.Model):
     __tablename__ = "reservations"
     id         = db.Column(db.Integer, primary_key=True)
     name       = db.Column(db.String(120), nullable=False)
-    phone      = db.Column(db.String(30),  nullable=False)
+    instagram  = db.Column(db.String(120), nullable=False)
+    phone      = db.Column(db.String(30),  nullable=True)
     email      = db.Column(db.String(120), nullable=True)
     date       = db.Column(db.Date,        nullable=False)
     time_slot  = db.Column(db.String(10),  nullable=False)
@@ -48,6 +51,8 @@ PROMO_UNTIL     = date(2026, 4, 30)
 BANK_IBAN        = os.getenv("BANK_IBAN", "BE94 3632 6175 1914")
 BANK_NAME        = os.getenv("BANK_NAME", "Babeelashes")
 ADMIN_PASSWORD   = os.getenv("ADMIN_PASSWORD", "admin")
+ADMIN_EMAIL      = os.getenv("ADMIN_EMAIL", "")
+resend.api_key   = os.getenv("RESEND_API_KEY", "")
 
 
 
@@ -59,6 +64,33 @@ def login_required(f):
             return redirect(url_for("admin_login"))
         return f(*args, **kwargs)
     return decorated
+
+
+def send_booking_notification(name, instagram, phone, email, booking_date, time_slot, price, teinture):
+    if not ADMIN_EMAIL or not resend.api_key:
+        return
+    teinture_line = "<br><strong>Teinture :</strong> Oui (+5€)" if teinture else ""
+    phone_line = f"<br><strong>Téléphone :</strong> {phone}" if phone else ""
+    email_line = f"<br><strong>Email :</strong> {email}" if email else ""
+    try:
+        resend.Emails.send({
+            "from": "onboarding@resend.dev",
+            "to": ADMIN_EMAIL,
+            "subject": f"Nouveau RDV — {name} le {booking_date.strftime('%d/%m/%Y')} à {time_slot}",
+            "html": f"""
+            <h2>Nouveau rendez-vous Babelash</h2>
+            <p>
+              <strong>Nom :</strong> {name}<br>
+              <strong>Instagram :</strong> @{instagram}{phone_line}{email_line}<br>
+              <strong>Date :</strong> {booking_date.strftime('%d/%m/%Y')}<br>
+              <strong>Heure :</strong> {time_slot}{teinture_line}<br>
+              <strong>Prix total :</strong> {price}€<br>
+              <strong>Acompte attendu :</strong> 10€ — IBAN {BANK_IBAN}
+            </p>
+            """,
+        })
+    except Exception:
+        pass
 
 
 def get_price(booking_date: date) -> Decimal:
@@ -108,18 +140,19 @@ def booking():
 
     if request.method == "POST":
         name      = request.form.get("name", "").strip()
+        instagram = request.form.get("instagram", "").strip().lstrip("@")
         phone     = request.form.get("phone", "").strip()
         email     = request.form.get("email", "").strip()
         date_str  = request.form.get("date", "")
         time_slot = request.form.get("time_slot", "")
 
-        form_data = {"name": name, "phone": phone, "email": email,
+        form_data = {"name": name, "instagram": instagram, "phone": phone, "email": email,
                      "date": date_str, "time_slot": time_slot}
 
         if not name:
             errors["name"] = "Nom requis"
-        if not phone:
-            errors["phone"] = "Téléphone requis"
+        if not instagram:
+            errors["instagram"] = "Pseudo Instagram requis"
         if not date_str:
             errors["date"] = "Date requise"
         else:
@@ -140,11 +173,12 @@ def booking():
                 errors["time_slot"] = "Ce créneau est déjà pris"
             else:
                 db.session.add(Reservation(
-                    name=name, phone=phone, email=email or None,
+                    name=name, instagram=instagram, phone=phone or None, email=email or None,
                     date=booking_date, time_slot=time_slot, price=price,
                     teinture=teinture, paid=True,
                 ))
                 db.session.commit()
+                send_booking_notification(name, instagram, phone, email, booking_date, time_slot, price, teinture)
                 return redirect(url_for("confirmation",
                                         name=name, date=date_str,
                                         time=time_slot, price=str(price),
@@ -256,7 +290,8 @@ def api_admin_reservations():
         return jsonify([{
             "id":        r.id,
             "name":      r.name,
-            "phone":     r.phone,
+            "instagram": r.instagram,
+            "phone":     r.phone or "",
             "email":     r.email or "",
             "date":      r.date.isoformat(),
             "time_slot": r.time_slot,
