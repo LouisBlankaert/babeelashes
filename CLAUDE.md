@@ -56,6 +56,12 @@
 - `paid=True` mis automatiquement à la sauvegarde (pas de paiement en ligne)
 - Les créneaux passés aujourd'hui sont grisés (fuseau Europe/Brussels via zoneinfo)
 
+## Modèle UnavailableDay
+- Table `unavailable_days` : id, date (unique)
+- Créée automatiquement via `db.create_all()` — **migration Railway nécessaire** : `CREATE TABLE IF NOT EXISTS unavailable_days (id SERIAL PRIMARY KEY, date DATE NOT NULL UNIQUE);`
+- Permet à l'admin de bloquer des journées entières
+- Impact : `/api/availability` retourne tous les créneaux à `false`, `/booking` refuse la date, calendrier booking grise le jour
+
 ## Lancer le projet (dev)
 ```bash
 venv/bin/python app.py
@@ -77,8 +83,10 @@ venv/bin/pip install -r requirements.txt
 - URL prod : https://www.babeelashes.be/admin
 - URL local : http://127.0.0.1:5000/admin
 - Mot de passe dans `.env` : `babeelash2026`
-- Fonctions : voir RDV du mois, déplacer un RDV, supprimer un RDV
+- Fonctions : voir RDV du mois, déplacer un RDV, supprimer un RDV, bloquer/débloquer une journée
 - Les RDV avec teinture affichent "· T" sur la pilule et un badge dans le modal
+- Jours bloqués : fond rouge pâle + badge "Indisponible" + icône cadenas (visible au survol, toujours visible si bloqué)
+- Cliquer sur le cadenas d'un jour le ferme (confirmation si RDV existants) ou le réouvre
 
 ## Réseaux sociaux
 - TikTok et Instagram affichés sur la landing page
@@ -114,6 +122,10 @@ venv/bin/pip install -r requirements.txt
   - Outlook SMTP bloqué (SmtpClientAuthentication disabled)
   - → Créer un compte Gmail et utiliser SMTP Gmail avec mot de passe d'application
   - Variables à ajouter : `ADMIN_EMAIL`, `MAIL_PASSWORD`
+- **Migration Railway** pour la table `unavailable_days` :
+  ```sql
+  CREATE TABLE IF NOT EXISTS unavailable_days (id SERIAL PRIMARY KEY, date DATE NOT NULL UNIQUE);
+  ```
 
 ## Instructions
 - Use context7 for up to date documentation

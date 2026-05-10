@@ -384,10 +384,11 @@
   const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
   const DAYS_FR   = ['Lu','Ma','Me','Je','Ve','Sa','Di'];
 
-  let currentYear  = TODAY.getFullYear();
-  let currentMonth = TODAY.getMonth();
-  let selectedDate = null;
-  let currentPrice = null;
+  let currentYear     = TODAY.getFullYear();
+  let currentMonth    = TODAY.getMonth();
+  let selectedDate    = null;
+  let currentPrice    = null;
+  let unavailableDays = new Set();
 
   // Pre-fill if form had errors
   const prefilledDate = '{{ form_data.date or "" }}';
@@ -432,12 +433,13 @@
 
     // Current month days
     for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(currentYear, currentMonth, day);
-      const el   = document.createElement('div');
-      el.className = 'cal-day';
+      const date    = new Date(currentYear, currentMonth, day);
+      const dateStr = toISO(date);
+      const el      = document.createElement('div');
+      el.className  = 'cal-day';
       el.textContent = day;
 
-      if (date < MIN_DATE || date > MAX_DATE) {
+      if (date < MIN_DATE || date > MAX_DATE || unavailableDays.has(dateStr)) {
         el.classList.add('past');
       } else {
         el.addEventListener('click', () => selectDate(date, el));
@@ -578,21 +580,30 @@
     return `${y}-${m}-${d}`;
   }
 
+  // ── Load unavailable days then render ────────────────
+  async function loadUnavailableDaysAndRender() {
+    try {
+      const r = await fetch(`/api/unavailable-days?year=${currentYear}&month=${currentMonth + 1}`);
+      unavailableDays = new Set(await r.json());
+    } catch(e) { unavailableDays = new Set(); }
+    renderCalendar();
+  }
+
   // ── Nav buttons ──────────────────────────────────────
   document.getElementById('cal-prev').addEventListener('click', () => {
     if (currentYear === TODAY.getFullYear() && currentMonth === TODAY.getMonth()) return;
     currentMonth--;
     if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-    renderCalendar();
+    loadUnavailableDaysAndRender();
   });
   document.getElementById('cal-next').addEventListener('click', () => {
     currentMonth++;
     if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-    renderCalendar();
+    loadUnavailableDaysAndRender();
   });
 
   // ── Init ─────────────────────────────────────────────
-  renderCalendar();
+  loadUnavailableDaysAndRender();
 
   // Re-trigger if pre-filled (form error re-render)
   if (prefilledDate && selectedDate) {

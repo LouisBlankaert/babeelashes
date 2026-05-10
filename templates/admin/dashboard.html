@@ -72,6 +72,34 @@
       .rdv-pill .name-text { display:none; }
     }
 
+    /* ── Blocked day ── */
+    .cal-cell.blocked {
+      background: rgba(239,68,68,0.05);
+      border-color: rgba(239,68,68,0.2) !important;
+    }
+    .blocked-badge {
+      font-size: 0.62rem;
+      color: #EF4444;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 3px;
+    }
+    .block-btn {
+      position: absolute;
+      top: 5px; right: 5px;
+      width: 20px; height: 20px;
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: opacity 0.15s, color 0.15s;
+      border: none; background: transparent; padding: 0;
+      color: #C4A8B0;
+      opacity: 0.35;
+    }
+    .cal-cell:hover .block-btn { opacity: 1; }
+    .cal-cell.blocked .block-btn { opacity: 1; color: #EF4444; }
+
     /* ── Toast ── */
     #toast {
       position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(20px);
@@ -139,7 +167,7 @@
   </main>
 
   <!-- Toast -->
-  <div id="toast"><span class="check">✓</span> Rendez-vous supprimé</div>
+  <div id="toast"><span class="check">✓</span><span id="toast-msg"> Rendez-vous supprimé</span></div>
 
   <!-- Modal détail RDV -->
   <div class="modal-overlay hidden" id="modal">
@@ -265,16 +293,21 @@
   const DAYS   = ['Lu','Ma','Me','Je','Ve','Sa','Di'];
 
   const TODAY = new Date(); TODAY.setHours(0,0,0,0);
-  let currentYear  = TODAY.getFullYear();
-  let currentMonth = TODAY.getMonth();
-  let allRdvs      = [];
-  let selectedRdv  = null;
+  let currentYear     = TODAY.getFullYear();
+  let currentMonth    = TODAY.getMonth();
+  let allRdvs         = [];
+  let unavailableDays = new Set();
+  let selectedRdv     = null;
 
-  // ── Fetch reservations for current month ──────────────
+  // ── Fetch reservations + unavailable days for current month ──
   async function loadRdvs() {
     try {
-      const r    = await fetch(`/api/admin/reservations?year=${currentYear}&month=${currentMonth + 1}`);
-      allRdvs    = await r.json();
+      const [rdvRes, unavailRes] = await Promise.all([
+        fetch(`/api/admin/reservations?year=${currentYear}&month=${currentMonth + 1}`),
+        fetch(`/api/admin/unavailable?year=${currentYear}&month=${currentMonth + 1}`)
+      ]);
+      allRdvs         = await rdvRes.json();
+      unavailableDays = new Set(await unavailRes.json());
       renderCalendar();
     } catch(e) { console.error(e); }
   }
@@ -312,10 +345,11 @@
 
     // Current month
     for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-      const isToday = new Date(currentYear, currentMonth, day).toDateString() === TODAY.toDateString();
-      const dayRdvs = allRdvs.filter(r => r.date === dateStr);
-      grid.appendChild(makeCell(day, false, dayRdvs, isToday));
+      const dateStr  = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const isToday  = new Date(currentYear, currentMonth, day).toDateString() === TODAY.toDateString();
+      const dayRdvs  = allRdvs.filter(r => r.date === dateStr);
+      const isBlocked = unavailableDays.has(dateStr);
+      grid.appendChild(makeCell(day, false, dayRdvs, isToday, dateStr, isBlocked));
     }
 
     // Next month
@@ -326,14 +360,21 @@
     }
   }
 
-  function makeCell(day, otherMonth, rdvs, isToday = false) {
+  function makeCell(day, otherMonth, rdvs, isToday = false, dateStr = null, isBlocked = false) {
     const cell = document.createElement('div');
-    cell.className = 'cal-cell' + (otherMonth ? ' other-month' : '') + (isToday ? ' today' : '');
+    cell.className = 'cal-cell' + (otherMonth ? ' other-month' : '') + (isToday ? ' today' : '') + (isBlocked ? ' blocked' : '');
 
     const num = document.createElement('div');
     num.className = 'day-num';
     num.textContent = day;
     cell.appendChild(num);
+
+    if (isBlocked) {
+      const badge = document.createElement('div');
+      badge.className = 'blocked-badge';
+      badge.textContent = 'Indisponible';
+      cell.appendChild(badge);
+    }
 
     rdvs.forEach(rdv => {
       const pill = document.createElement('div');
@@ -342,6 +383,17 @@
       pill.addEventListener('click', () => openModal(rdv));
       cell.appendChild(pill);
     });
+
+    if (!otherMonth && dateStr) {
+      const btn = document.createElement('button');
+      btn.className = 'block-btn';
+      btn.title = isBlocked ? 'Réouvrir cette journée' : 'Fermer cette journée';
+      btn.innerHTML = isBlocked
+        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>`
+        : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+      btn.addEventListener('click', (e) => toggleDayBlock(dateStr, isBlocked, rdvs.length, e));
+      cell.appendChild(btn);
+    }
 
     return cell;
   }
@@ -390,10 +442,32 @@
 
   // ── Toast ─────────────────────────────────────────────
   function showToast(msg = 'Rendez-vous supprimé') {
-    const t = document.getElementById('toast');
-    t.querySelector('span:last-child') && (t.querySelector('span:last-child').textContent = ' ' + msg);
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 4000);
+    document.getElementById('toast-msg').textContent = ' ' + msg;
+    document.getElementById('toast').classList.add('show');
+    setTimeout(() => document.getElementById('toast').classList.remove('show'), 4000);
+  }
+
+  // ── Block / unblock a day ─────────────────────────────
+  async function toggleDayBlock(dateStr, isBlocked, rdvCount, e) {
+    e.stopPropagation();
+    if (!isBlocked && rdvCount > 0) {
+      const label = rdvCount === 1 ? '1 rendez-vous' : `${rdvCount} rendez-vous`;
+      if (!confirm(`Ce jour a ${label}. Fermer quand même ?`)) return;
+    }
+    try {
+      if (isBlocked) {
+        await fetch(`/api/admin/unavailable/${dateStr}`, { method: 'DELETE' });
+        showToast('Journée réouverte');
+      } else {
+        await fetch('/api/admin/unavailable', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: dateStr }),
+        });
+        showToast('Journée fermée');
+      }
+      await loadRdvs();
+    } catch(err) { console.error(err); }
   }
 
   // ── Toggle edit section ───────────────────────────────

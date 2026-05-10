@@ -38,6 +38,12 @@ class Reservation(db.Model):
     created_at = db.Column(db.DateTime, server_default=db.func.now())
 
 
+class UnavailableDay(db.Model):
+    __tablename__ = "unavailable_days"
+    id   = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False, unique=True)
+
+
 # ── Config ───────────────────────────────────────────────────────
 OPEN_HOUR     = 10
 CLOSE_HOUR    = 18
@@ -160,6 +166,8 @@ def booking():
                 booking_date = date.fromisoformat(date_str)
                 if booking_date <= date.today():
                     errors["date"] = "La réservation doit être effectuée au moins 24h à l'avance"
+                elif UnavailableDay.query.filter_by(date=booking_date).first():
+                    errors["date"] = "Cette journée n'est pas disponible"
             except ValueError:
                 errors["date"] = "Date invalide"
         if not time_slot or time_slot not in TIME_SLOTS:
@@ -213,6 +221,8 @@ def api_availability():
         today_brussels = now_brussels.date()
 
         booking_date = date.fromisoformat(request.args.get("date", ""))
+        if UnavailableDay.query.filter_by(date=booking_date).first():
+            return jsonify({slot: False for slot in TIME_SLOTS})
         taken = {r.time_slot for r in Reservation.query.filter_by(date=booking_date, paid=True).all()}
 
         def is_available(slot):
@@ -336,6 +346,69 @@ def api_admin_delete(reservation_id):
     db.session.delete(r)
     db.session.commit()
     return jsonify({"ok": True})
+
+
+@app.route("/api/admin/unavailable")
+@login_required
+def api_admin_unavailable_get():
+    month = request.args.get("month")
+    year  = request.args.get("year")
+    try:
+        from calendar import monthrange
+        y, m = int(year), int(month)
+        _, days_in_month = monthrange(y, m)
+        days = UnavailableDay.query.filter(
+            UnavailableDay.date >= date(y, m, 1),
+            UnavailableDay.date <= date(y, m, days_in_month),
+        ).all()
+        return jsonify([d.date.isoformat() for d in days])
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid params"}), 400
+
+
+@app.route("/api/admin/unavailable", methods=["POST"])
+@login_required
+def api_admin_unavailable_add():
+    data = request.get_json()
+    try:
+        d = date.fromisoformat(data.get("date", ""))
+    except (ValueError, AttributeError):
+        return jsonify({"error": "Date invalide"}), 400
+    if not UnavailableDay.query.filter_by(date=d).first():
+        db.session.add(UnavailableDay(date=d))
+        db.session.commit()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/admin/unavailable/<date_str>", methods=["DELETE"])
+@login_required
+def api_admin_unavailable_delete(date_str):
+    try:
+        d = date.fromisoformat(date_str)
+    except ValueError:
+        return jsonify({"error": "Date invalide"}), 400
+    row = UnavailableDay.query.filter_by(date=d).first()
+    if row:
+        db.session.delete(row)
+        db.session.commit()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/unavailable-days")
+def api_unavailable_days():
+    month = request.args.get("month")
+    year  = request.args.get("year")
+    try:
+        from calendar import monthrange
+        y, m = int(year), int(month)
+        _, days_in_month = monthrange(y, m)
+        days = UnavailableDay.query.filter(
+            UnavailableDay.date >= date(y, m, 1),
+            UnavailableDay.date <= date(y, m, days_in_month),
+        ).all()
+        return jsonify([d.date.isoformat() for d in days])
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid params"}), 400
 
 
 with app.app_context():
