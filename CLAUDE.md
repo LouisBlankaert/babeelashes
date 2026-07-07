@@ -4,9 +4,9 @@
 - Nom : Babelash
 - Service : rehaussement de cils uniquement
 - Ville : Bruxelles
-- Horaires : lundi au dimanche, 10h - 18h
+- Horaires : lundi au dimanche, 11h - 18h
 - Durée par créneau : 1h
-- Créneaux : 10:00, 11:30, 13:00, 14:30, 16:00, 17:30
+- Créneaux : 11:00, 12:30, 14:00, 15:30, 17:00
 - Site pour un vrai client — tout est en production
 
 ## Prix

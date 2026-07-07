@@ -45,7 +45,7 @@ class UnavailableDay(db.Model):
 
 
 # ── Config ───────────────────────────────────────────────────────
-OPEN_HOUR     = 10
+OPEN_HOUR     = 11
 CLOSE_HOUR    = 18
 SLOT_DURATION = 90
 PRICE_WEEK    = Decimal("35.00")
