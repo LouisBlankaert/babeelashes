@@ -6,7 +6,7 @@
 - Ville : Bruxelles
 - Horaires : lundi au dimanche, 11h - 18h
 - Durée par créneau : 1h
-- Créneaux : 11:00, 12:30, 14:00, 15:30, 17:00
+- Créneaux : 11:00, 12:15, 13:30, 15:00, 16:15, 17:30 (liste `SLOTS` dans app.py)
 - Site pour un vrai client — tout est en production
 
 ## Prix

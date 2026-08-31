@@ -48,6 +48,7 @@ class UnavailableDay(db.Model):
 OPEN_HOUR     = 11
 CLOSE_HOUR    = 18
 SLOT_DURATION = 90
+SLOTS         = ["11:00", "12:15", "13:30", "15:00", "16:15", "17:30"]
 PRICE_WEEK    = Decimal("35.00")
 PRICE_WEEKEND = Decimal("40.00")
 PRICE_PROMO   = Decimal("20.00")
@@ -106,17 +107,7 @@ def get_price(booking_date: date) -> Decimal:
 
 
 def generate_slots():
-    slots = []
-    hour, minute = OPEN_HOUR, 0
-    while True:
-        slots.append(f"{hour:02d}:{minute:02d}")
-        minute += SLOT_DURATION
-        if minute >= 60:
-            hour += minute // 60
-            minute = minute % 60
-        if hour >= CLOSE_HOUR:
-            break
-    return slots
+    return list(SLOTS)
 
 
 TIME_SLOTS = generate_slots()
