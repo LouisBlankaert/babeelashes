@@ -402,6 +402,11 @@ def api_unavailable_days():
         return jsonify({"error": "Invalid params"}), 400
 
 
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok"})
+
+
 with app.app_context():
     db.create_all()
 
