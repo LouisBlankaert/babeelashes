@@ -1,13 +1,19 @@
 import os
+import shutil
+import subprocess
+import uuid
 from datetime import date, timedelta
 from decimal import Decimal
 
 import resend
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, jsonify, redirect, render_template, request, send_from_directory, session, url_for
 from functools import wraps
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import inspect
+from PIL import Image, ImageOps
+from werkzeug.utils import secure_filename
 
 load_dotenv()
 
@@ -18,6 +24,8 @@ if database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+# Les vidéos filmées au téléphone pèsent vite 50-100 Mo
+app.config["MAX_CONTENT_LENGTH"] = 300 * 1024 * 1024
 
 db = SQLAlchemy(app)
 
@@ -44,6 +52,27 @@ class UnavailableDay(db.Model):
     date = db.Column(db.Date, nullable=False, unique=True)
 
 
+class Media(db.Model):
+    """Photo ou vidéo du carrousel de la page d'accueil, gérée depuis /admin/medias."""
+    __tablename__ = "media"
+    id         = db.Column(db.Integer, primary_key=True)
+    filename   = db.Column(db.String(255), nullable=False, unique=True)
+    position   = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+
+    @property
+    def ext(self):
+        return os.path.splitext(self.filename)[1].lower().lstrip(".")
+
+    @property
+    def is_video(self):
+        return self.ext in VIDEO_EXTS
+
+    @property
+    def url(self):
+        return url_for("media_file", filename=self.filename)
+
+
 # ── Config ───────────────────────────────────────────────────────
 OPEN_HOUR     = 11
 CLOSE_HOUR    = 18
@@ -60,6 +89,33 @@ BANK_NAME        = os.getenv("BANK_NAME", "Babeelashes")
 ADMIN_PASSWORD   = os.getenv("ADMIN_PASSWORD", "admin")
 ADMIN_EMAIL      = os.getenv("ADMIN_EMAIL", "")
 resend.api_key   = os.getenv("RESEND_API_KEY", "")
+
+# Fichiers envoyés depuis l'admin. En prod, UPLOAD_DIR pointe sur un volume
+# persistant, sinon chaque redéploiement effacerait les photos.
+UPLOAD_DIR  = os.getenv("UPLOAD_DIR", os.path.join(app.instance_path, "uploads"))
+IMAGE_EXTS  = {"jpg", "jpeg", "png", "webp", "gif"}
+VIDEO_EXTS  = {"mp4", "mov", "webm"}
+MAX_SIDE    = 1600   # px, côté le plus long des photos après envoi
+
+
+def optimize_image(src, dest):
+    """Photo de téléphone (4000 px, 5 Mo) → JPEG 1600 px léger, remis à l'endroit."""
+    with Image.open(src) as img:
+        img = ImageOps.exif_transpose(img).convert("RGB")
+        img.thumbnail((MAX_SIDE, MAX_SIDE))
+        img.save(dest, "JPEG", quality=85, optimize=True)
+
+
+def convert_video(src, dest):
+    """Vidéo iPhone (HEVC, illisible sur Chrome/Android) → MP4 H.264 lu partout.
+    Sans le son : le carrousel joue les vidéos en muet."""
+    scale = "scale='if(gt(iw,ih),min(1280,iw),-2)':'if(gt(iw,ih),-2,min(1280,ih))'"
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-y", "-i", src, "-an",
+         "-c:v", "libx264", "-preset", "veryfast", "-crf", "24", "-pix_fmt", "yuv420p",
+         "-vf", scale, "-movflags", "+faststart", dest],
+        check=True, timeout=280,
+    )
 
 
 
@@ -116,13 +172,14 @@ TIME_SLOTS = generate_slots()
 # ── Routes ───────────────────────────────────────────────────────
 @app.route("/")
 def index():
-    img_dir = os.path.join(app.static_folder, "img")
-    VIDEO_EXTS = {".mp4", ".mov", ".webm"}
-    all_files = [f for f in os.listdir(img_dir)
-                 if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp", ".mp4", ".mov", ".webm"))]
-    media = sorted(all_files, key=lambda f: (0 if os.path.splitext(f)[1].lower() in VIDEO_EXTS else 1, f))
+    media = Media.query.order_by(Media.position, Media.id).all()
     promo_active = date.today() <= PROMO_UNTIL
     return render_template("index.html", media=media, promo_active=promo_active)
+
+
+@app.route("/media/<path:filename>")
+def media_file(filename):
+    return send_from_directory(UPLOAD_DIR, filename, max_age=60 * 60 * 24 * 30)
 
 
 @app.route("/contact")
@@ -402,13 +459,108 @@ def api_unavailable_days():
         return jsonify({"error": "Invalid params"}), 400
 
 
+@app.route("/admin/medias")
+@login_required
+def admin_medias():
+    return render_template("admin/medias.html")
+
+
+@app.route("/api/admin/media")
+@login_required
+def api_admin_media_list():
+    media = Media.query.order_by(Media.position, Media.id).all()
+    return jsonify([{"id": m.id, "url": m.url, "is_video": m.is_video} for m in media])
+
+
+@app.route("/api/admin/media", methods=["POST"])
+@login_required
+def api_admin_media_upload():
+    file = request.files.get("file")
+    if not file or not file.filename:
+        return jsonify({"error": "Aucun fichier reçu"}), 400
+    ext = os.path.splitext(file.filename)[1].lower().lstrip(".")
+    if ext not in IMAGE_EXTS | VIDEO_EXTS:
+        return jsonify({"error": f"Format .{ext} non accepté (photos JPG/PNG/WEBP, vidéos MP4/MOV)"}), 400
+
+    # Nom unique : deux « IMG_0001.jpg » venant de deux téléphones ne s'écrasent pas
+    base = secure_filename(os.path.splitext(file.filename)[0])[:60] or "media"
+    stem = f"{uuid.uuid4().hex[:8]}-{base}"
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    raw = os.path.join(UPLOAD_DIR, f".tmp-{stem}.{ext}")
+    file.save(raw)
+
+    is_video = ext in VIDEO_EXTS
+    filename = f"{stem}.{'mp4' if is_video else 'jpg'}"
+    try:
+        (convert_video if is_video else optimize_image)(raw, os.path.join(UPLOAD_DIR, filename))
+    except Exception:
+        app.logger.exception("Conversion impossible de %s", file.filename)
+        return jsonify({"error": "Ce fichier n'a pas pu être lu"}), 400
+    finally:
+        os.remove(raw)
+
+    last = db.session.query(db.func.max(Media.position)).scalar()
+    m = Media(filename=filename, position=(last or 0) + 1)
+    db.session.add(m)
+    db.session.commit()
+    return jsonify({"id": m.id, "url": m.url, "is_video": m.is_video})
+
+
+@app.route("/api/admin/media/order", methods=["POST"])
+@login_required
+def api_admin_media_order():
+    ids = (request.get_json() or {}).get("ids", [])
+    media = {m.id: m for m in Media.query.all()}
+    for position, media_id in enumerate(ids):
+        if media_id in media:
+            media[media_id].position = position
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/admin/media/<int:media_id>", methods=["DELETE"])
+@login_required
+def api_admin_media_delete(media_id):
+    m = Media.query.get_or_404(media_id)
+    path = os.path.join(UPLOAD_DIR, m.filename)
+    db.session.delete(m)
+    db.session.commit()
+    if os.path.exists(path):
+        os.remove(path)
+    return jsonify({"ok": True})
+
+
+@app.errorhandler(413)
+def too_large(_):
+    return jsonify({"error": "Fichier trop lourd (300 Mo maximum)"}), 413
+
+
 @app.route("/health")
 def health():
     return jsonify({"status": "ok"})
 
 
+def seed_media():
+    """Premier lancement : reprend les photos/vidéos de static/img dans le carrousel géré."""
+    src_dir = os.path.join(app.static_folder, "img")
+    files = [f for f in os.listdir(src_dir)
+             if os.path.splitext(f)[1].lower().lstrip(".") in IMAGE_EXTS | VIDEO_EXTS]
+    # Même ordre qu'avant : vidéos d'abord, puis photos, par nom
+    files.sort(key=lambda f: (0 if os.path.splitext(f)[1].lower().lstrip(".") in VIDEO_EXTS else 1, f))
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    for position, f in enumerate(files):
+        shutil.copy2(os.path.join(src_dir, f), os.path.join(UPLOAD_DIR, f))
+        db.session.add(Media(filename=f, position=position))
+    db.session.commit()
+
+
 with app.app_context():
+    first_run = not inspect(db.engine).has_table("media")
     db.create_all()
+    if first_run:
+        seed_media()
+    # Gunicorn --preload : les workers ne doivent pas hériter des connexions du process parent
+    db.engine.dispose()
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
