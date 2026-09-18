@@ -462,7 +462,8 @@
     if (vid) {
       vid.currentTime = 0;
       vid.play().catch(() => {});
-      vid.onended = () => { if (!paused) carouselGo(current + 1); };
+      // Souris dessus : la vidéo reboucle au lieu de passer à la suivante
+      vid.onended = () => { if (paused) vid.play().catch(() => {}); else carouselGo(current + 1); };
     } else {
       if (!paused) timer = setTimeout(() => carouselGo(current + 1), 3000);
     }
@@ -483,18 +484,14 @@
 
     carouselGo(0);
 
-    // Pause on hover
+    // Survol : on reste sur le média affiché, mais une vidéo continue de jouer
     track.parentElement.addEventListener('mouseenter', () => {
       paused = true;
       clearTimer();
-      const vid = slides[current].querySelector('video');
-      if (vid) vid.pause();
     });
     track.parentElement.addEventListener('mouseleave', () => {
       paused = false;
-      const vid = slides[current].querySelector('video');
-      if (vid) { vid.play(); }
-      else timer = setTimeout(() => carouselGo(current + 1), 3000);
+      if (!slides[current].querySelector('video')) timer = setTimeout(() => carouselGo(current + 1), 3000);
     });
 
     // Touch swipe
