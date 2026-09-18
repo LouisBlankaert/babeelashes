@@ -69,6 +69,32 @@
     }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     #toast.error { background:#B91C1C; }
+
+    .modal-overlay {
+      position:fixed; inset:0; z-index:150;
+      background:rgba(42,26,32,0.4); backdrop-filter:blur(4px);
+      display:flex; align-items:center; justify-content:center; padding:1rem;
+      opacity:0; pointer-events:none; transition:opacity 0.2s ease;
+    }
+    .modal-overlay.open { opacity:1; pointer-events:auto; }
+    .modal-box {
+      background:#fff; border-radius:1.5rem; padding:1.5rem;
+      width:100%; max-width:340px; text-align:center;
+      border:1px solid rgba(212,132,154,0.2);
+      box-shadow:0 20px 60px rgba(212,132,154,0.2);
+      transform:translateY(12px) scale(0.98); transition:transform 0.2s ease;
+    }
+    .modal-overlay.open .modal-box { transform:none; }
+    .modal-preview {
+      width:96px; height:120px; margin:0 auto 1rem; border-radius:12px; overflow:hidden;
+      background:#F7EFE8;
+    }
+    .modal-preview img, .modal-preview video { width:100%; height:100%; object-fit:cover; display:block; }
+    .modal-btn {
+      flex:1; padding:0.8rem; border-radius:12px; font-size:0.9rem; font-weight:600; cursor:pointer;
+      transition:opacity 0.15s;
+    }
+    .modal-btn:hover { opacity:0.85; }
   </style>
 </head>
 <body class="min-h-screen">
@@ -122,6 +148,19 @@
   </main>
 
   <div id="toast"></div>
+
+  <!-- Confirmation de suppression -->
+  <div id="confirm" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="modal-box">
+      <div id="confirm-preview" class="modal-preview"></div>
+      <h2 id="confirm-title" class="font-serif text-xl font-semibold"></h2>
+      <p class="text-sm mt-1 mb-5" style="color:#8A6070;">Elle n'apparaîtra plus sur la page d'accueil.</p>
+      <div class="flex gap-2">
+        <button id="confirm-no" class="modal-btn" style="color:#8A6070; border:1px solid rgba(212,132,154,0.3);">Annuler</button>
+        <button id="confirm-yes" class="modal-btn" style="color:#fff; background:#EF4444;">Supprimer</button>
+      </div>
+    </div>
+  </div>
 
 <script>
   let items = [];
@@ -183,8 +222,31 @@
     if (!r.ok) { showToast("L'ordre n'a pas pu être enregistré", true); load(); }
   }
 
+  // Fenêtre de confirmation : renvoie true si « Supprimer », false sinon
+  function askDelete(m) {
+    const box = document.getElementById('confirm');
+    document.getElementById('confirm-title').textContent =
+      m.is_video ? 'Supprimer cette vidéo ?' : 'Supprimer cette photo ?';
+    document.getElementById('confirm-preview').innerHTML = m.is_video
+      ? `<video src="${m.url}#t=0.1" muted playsinline preload="metadata"></video>`
+      : `<img src="${m.url}" alt=""/>`;
+    box.classList.add('open');
+    return new Promise(resolve => {
+      const close = answer => {
+        box.classList.remove('open');
+        box.onclick = document.getElementById('confirm-yes').onclick =
+          document.getElementById('confirm-no').onclick = document.onkeydown = null;
+        resolve(answer);
+      };
+      document.getElementById('confirm-yes').onclick = () => close(true);
+      document.getElementById('confirm-no').onclick  = () => close(false);
+      box.onclick = e => { if (e.target === box) close(false); };
+      document.onkeydown = e => { if (e.key === 'Escape') close(false); };
+    });
+  }
+
   async function remove(m) {
-    if (!confirm(m.is_video ? 'Supprimer cette vidéo du site ?' : 'Supprimer cette photo du site ?')) return;
+    if (!await askDelete(m)) return;
     const r = await fetch(`/api/admin/media/${m.id}`, { method: 'DELETE' });
     if (!r.ok) { showToast('La suppression a échoué', true); return; }
     items = items.filter(x => x.id !== m.id);
