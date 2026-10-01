@@ -10,8 +10,8 @@
 - Site pour un vrai client — tout est en production
 
 ## Prix
-- Semaine (lundi-samedi) : 35€
-- Dimanche : 40€
+- Semaine (lundi-samedi) : 45€ (depuis le 01/10/2026 — avant : 35€)
+- Dimanche : 50€ (avant : 40€)
 - Option teinture : +5€ (sélectionnable dans le formulaire de réservation)
 - Promotion **expirée** : 20€ était valable jusqu'au 30 avril 2026 (plus affichée)
 - Logique : `promo_active = date.today() <= PROMO_UNTIL` passé au template
@@ -87,6 +87,13 @@ venv/bin/pip install -r requirements.txt
 - Les RDV avec teinture affichent "· T" sur la pilule et un badge dans le modal
 - Jours bloqués : fond rouge pâle + badge "Indisponible" + icône cadenas (visible au survol, toujours visible si bloqué)
 - Cliquer sur le cadenas d'un jour le ferme (confirmation si RDV existants) ou le réouvre
+
+## Photos & vidéos du carrousel (`/admin/medias`)
+- La cliente ajoute / supprime / réordonne les médias de la page d'accueil depuis son PC ou téléphone
+- Table `media` (filename, position) ; fichiers dans `UPLOAD_DIR` (`/app/uploads` en prod = **volume persistant Coolify**, `instance/uploads` en dev), servis par `/media/<fichier>`
+- À l'envoi : photos → JPEG 1600 px (Pillow, orientation corrigée) ; vidéos → MP4 H.264 720p sans son (ffmpeg). Les vidéos iPhone sont en HEVC, illisibles sur Chrome/Android
+- Premier lancement (table `media` absente) : `static/img/` est copié dans `UPLOAD_DIR` comme contenu de départ
+- Gunicorn en `--preload --timeout 300` (Dockerfile)
 
 ## Réseaux sociaux
 - TikTok et Instagram affichés sur la landing page
