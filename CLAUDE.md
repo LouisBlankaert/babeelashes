@@ -18,7 +18,7 @@
 
 ## Acompte virement bancaire
 - Montant : 10€ (variable `DEPOSIT` dans app.py)
-- IBAN : BE94 3632 6175 1914 (variable `BANK_IBAN`)
+- IBAN : BE58 6503 2990 2279 (variable `BANK_IBAN`)
 - Flow : booking form → sauvegarde directe en DB (`paid=True`) → `/confirmation` avec IBAN
 - Communication demandée : "Babeelashes + nom de la cliente"
 - La propriétaire vérifie manuellement les virements sur son compte
@@ -61,6 +61,11 @@
 - Créée automatiquement via `db.create_all()` — **migration Railway nécessaire** : `CREATE TABLE IF NOT EXISTS unavailable_days (id SERIAL PRIMARY KEY, date DATE NOT NULL UNIQUE);`
 - Permet à l'admin de bloquer des journées entières
 - Impact : `/api/availability` retourne tous les créneaux à `false`, `/booking` refuse la date, calendrier booking grise le jour
+
+## Modèle UnavailableSlot
+- Table `unavailable_slots` : id, date, time_slot (unique ensemble) — créée par `db.create_all()`
+- Bloque une seule heure : dans l'admin, cliquer sur un jour → fenêtre avec les 6 créneaux → « Bloquer » / « Réouvrir »
+- Impact : `/api/availability` met ce créneau à `false`, `/booking` le refuse, l'agenda affiche une pilule rouge « Pas dispo »
 
 ## Lancer le projet (dev)
 ```bash

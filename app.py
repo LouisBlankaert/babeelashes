@@ -52,6 +52,15 @@ class UnavailableDay(db.Model):
     date = db.Column(db.Date, nullable=False, unique=True)
 
 
+class UnavailableSlot(db.Model):
+    """Un seul créneau bloqué (ex. le 14/10 à 15:00), le reste de la journée reste ouvert."""
+    __tablename__ = "unavailable_slots"
+    __table_args__ = (db.UniqueConstraint("date", "time_slot"),)
+    id        = db.Column(db.Integer, primary_key=True)
+    date      = db.Column(db.Date, nullable=False)
+    time_slot = db.Column(db.String(10), nullable=False)
+
+
 class Media(db.Model):
     """Photo ou vidéo du carrousel de la page d'accueil, gérée depuis /admin/medias."""
     __tablename__ = "media"
@@ -84,7 +93,7 @@ PRICE_PROMO   = Decimal("20.00")
 DEPOSIT         = Decimal("10.00")
 PRICE_TEINTURE  = Decimal("5.00")
 PROMO_UNTIL     = date(2026, 4, 30)
-BANK_IBAN        = os.getenv("BANK_IBAN", "BE94 3632 6175 1914")
+BANK_IBAN        = os.getenv("BANK_IBAN", "BE58 6503 2990 2279")
 BANK_NAME        = os.getenv("BANK_NAME", "Babeelashes")
 ADMIN_PASSWORD   = os.getenv("ADMIN_PASSWORD", "admin")
 ADMIN_EMAIL      = os.getenv("ADMIN_EMAIL", "")
@@ -220,6 +229,8 @@ def booking():
                 errors["date"] = "Date invalide"
         if not time_slot or time_slot not in TIME_SLOTS:
             errors["time_slot"] = "Créneau invalide"
+        elif "date" not in errors and UnavailableSlot.query.filter_by(date=booking_date, time_slot=time_slot).first():
+            errors["time_slot"] = "Ce créneau n'est pas disponible"
 
         if not errors:
             teinture = request.form.get("teinture") == "1"
@@ -272,6 +283,7 @@ def api_availability():
         if UnavailableDay.query.filter_by(date=booking_date).first():
             return jsonify({slot: False for slot in TIME_SLOTS})
         taken = {r.time_slot for r in Reservation.query.filter_by(date=booking_date, paid=True).all()}
+        taken |= {s.time_slot for s in UnavailableSlot.query.filter_by(date=booking_date).all()}
 
         def is_available(slot):
             if slot in taken:
@@ -326,7 +338,7 @@ def admin_logout():
 @app.route("/admin")
 @login_required
 def admin_dashboard():
-    return render_template("admin/dashboard.html")
+    return render_template("admin/dashboard.html", slots=TIME_SLOTS)
 
 
 @app.route("/api/admin/reservations")
@@ -436,6 +448,56 @@ def api_admin_unavailable_delete(date_str):
     except ValueError:
         return jsonify({"error": "Date invalide"}), 400
     row = UnavailableDay.query.filter_by(date=d).first()
+    if row:
+        db.session.delete(row)
+        db.session.commit()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/admin/unavailable-slots")
+@login_required
+def api_admin_unavailable_slots_get():
+    month = request.args.get("month")
+    year  = request.args.get("year")
+    try:
+        from calendar import monthrange
+        y, m = int(year), int(month)
+        _, days_in_month = monthrange(y, m)
+        slots = UnavailableSlot.query.filter(
+            UnavailableSlot.date >= date(y, m, 1),
+            UnavailableSlot.date <= date(y, m, days_in_month),
+        ).all()
+        return jsonify([{"date": s.date.isoformat(), "time_slot": s.time_slot} for s in slots])
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid params"}), 400
+
+
+@app.route("/api/admin/unavailable-slots", methods=["POST"])
+@login_required
+def api_admin_unavailable_slot_add():
+    data = request.get_json() or {}
+    try:
+        d = date.fromisoformat(data.get("date", ""))
+    except ValueError:
+        return jsonify({"error": "Date invalide"}), 400
+    slot = data.get("time_slot", "")
+    if slot not in TIME_SLOTS:
+        return jsonify({"error": "Créneau invalide"}), 400
+    if not UnavailableSlot.query.filter_by(date=d, time_slot=slot).first():
+        db.session.add(UnavailableSlot(date=d, time_slot=slot))
+        db.session.commit()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/admin/unavailable-slots", methods=["DELETE"])
+@login_required
+def api_admin_unavailable_slot_delete():
+    data = request.get_json() or {}
+    try:
+        d = date.fromisoformat(data.get("date", ""))
+    except ValueError:
+        return jsonify({"error": "Date invalide"}), 400
+    row = UnavailableSlot.query.filter_by(date=d, time_slot=data.get("time_slot", "")).first()
     if row:
         db.session.delete(row)
         db.session.commit()

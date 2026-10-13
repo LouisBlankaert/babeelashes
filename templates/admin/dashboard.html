@@ -30,6 +30,7 @@
       position: relative;
     }
     .cal-cell:hover { border-color: rgba(212,132,154,0.3); }
+    .cal-cell.clickable { cursor: pointer; }
     .cal-cell.today { border-color: #D4849A; }
     .cal-cell.other-month { background: rgba(253,248,245,0.5); opacity:0.5; }
     .cal-cell.today .day-num { color:#D4849A; font-weight:700; }
@@ -99,6 +100,35 @@
     }
     .cal-cell:hover .block-btn { opacity: 1; }
     .cal-cell.blocked .block-btn { opacity: 1; color: #EF4444; }
+
+    /* ── Blocked slot ── */
+    .slot-off-pill {
+      display:flex; align-items:center;
+      background: rgba(239,68,68,0.06);
+      border: 1px dashed rgba(239,68,68,0.3);
+      border-radius: 6px;
+      padding: 3px 6px;
+      margin-bottom: 3px;
+      font-size: 0.7rem;
+      color: #EF4444;
+    }
+    .slot-off-pill .time { font-weight:600; margin-right:4px; }
+    @media (max-width: 768px) { .slot-off-pill .label { display:none; } }
+
+    .slot-row {
+      display:flex; align-items:center; justify-content:space-between; gap:0.75rem;
+      padding: 0.6rem 0.75rem;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(212,132,154,0.15);
+    }
+    .slot-row.off { background: rgba(239,68,68,0.05); border-color: rgba(239,68,68,0.2); }
+    .slot-row.booked { background: rgba(242,197,208,0.2); }
+    .slot-btn {
+      font-size: 0.75rem; font-weight: 500;
+      padding: 0.35rem 0.8rem; border-radius: 999px;
+      cursor: pointer; transition: opacity 0.15s; white-space: nowrap;
+    }
+    .slot-btn:disabled { opacity: 0.5; cursor: default; }
 
     /* ── Toast ── */
     #toast {
@@ -171,6 +201,27 @@
 
   <!-- Toast -->
   <div id="toast"><span class="check">✓</span><span id="toast-msg"> Rendez-vous supprimé</span></div>
+
+  <!-- Modal journée : bloquer / débloquer des créneaux -->
+  <div class="modal-overlay hidden" id="day-modal">
+    <div class="modal-box">
+      <div class="flex items-start justify-between mb-5">
+        <div>
+          <p class="text-xs tracking-widest uppercase mb-1" style="color:#D4849A;">Disponibilités</p>
+          <h2 id="day-modal-title" class="font-serif text-2xl font-semibold" style="color:#2A1A20;"></h2>
+        </div>
+        <button onclick="closeDayModal()" class="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer"
+                style="background:rgba(212,132,154,0.1); color:#8A6070;">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <p id="day-modal-closed" class="text-xs mb-3 hidden" style="color:#EF4444;">
+        Toute la journée est fermée. Réouvre-la avec le cadenas pour gérer les heures une par une.
+      </p>
+      <p class="text-xs mb-3" style="color:#8A6070;">Bloque une heure où tu n'es pas disponible : les clientes ne pourront plus la réserver.</p>
+      <div id="day-modal-slots" class="space-y-2"></div>
+    </div>
+  </div>
 
   <!-- Modal détail RDV -->
   <div class="modal-overlay hidden" id="modal">
@@ -294,24 +345,30 @@
 <script>
   const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
   const DAYS   = ['Lu','Ma','Me','Je','Ve','Sa','Di'];
+  const ALL_SLOTS = {{ slots|tojson }};
 
   const TODAY = new Date(); TODAY.setHours(0,0,0,0);
   let currentYear     = TODAY.getFullYear();
   let currentMonth    = TODAY.getMonth();
   let allRdvs         = [];
   let unavailableDays = new Set();
+  let unavailableSlots = new Set();   // "2026-10-14 15:00"
   let selectedRdv     = null;
+  let selectedDay     = null;
 
   // ── Fetch reservations + unavailable days for current month ──
   async function loadRdvs() {
     try {
-      const [rdvRes, unavailRes] = await Promise.all([
+      const [rdvRes, unavailRes, slotsRes] = await Promise.all([
         fetch(`/api/admin/reservations?year=${currentYear}&month=${currentMonth + 1}`),
-        fetch(`/api/admin/unavailable?year=${currentYear}&month=${currentMonth + 1}`)
+        fetch(`/api/admin/unavailable?year=${currentYear}&month=${currentMonth + 1}`),
+        fetch(`/api/admin/unavailable-slots?year=${currentYear}&month=${currentMonth + 1}`)
       ]);
-      allRdvs         = await rdvRes.json();
-      unavailableDays = new Set(await unavailRes.json());
+      allRdvs          = await rdvRes.json();
+      unavailableDays  = new Set(await unavailRes.json());
+      unavailableSlots = new Set((await slotsRes.json()).map(s => `${s.date} ${s.time_slot}`));
       renderCalendar();
+      if (selectedDay) renderDayModal();
     } catch(e) { console.error(e); }
   }
 
@@ -365,7 +422,8 @@
 
   function makeCell(day, otherMonth, rdvs, isToday = false, dateStr = null, isBlocked = false) {
     const cell = document.createElement('div');
-    cell.className = 'cal-cell' + (otherMonth ? ' other-month' : '') + (isToday ? ' today' : '') + (isBlocked ? ' blocked' : '');
+    cell.className = 'cal-cell' + (otherMonth ? ' other-month' : '') + (isToday ? ' today' : '') + (isBlocked ? ' blocked' : '') + (dateStr ? ' clickable' : '');
+    if (dateStr) cell.addEventListener('click', () => openDayModal(dateStr));
 
     const num = document.createElement('div');
     num.className = 'day-num';
@@ -379,11 +437,25 @@
       cell.appendChild(badge);
     }
 
-    rdvs.forEach(rdv => {
+    // RDV et heures bloquées, dans l'ordre de la journée
+    const items = rdvs.map(rdv => ({ time: rdv.time_slot, rdv }));
+    if (dateStr && !isBlocked) {
+      ALL_SLOTS.forEach(slot => {
+        if (unavailableSlots.has(`${dateStr} ${slot}`)) items.push({ time: slot, rdv: null });
+      });
+    }
+    items.sort((a, b) => a.time.localeCompare(b.time));
+
+    items.forEach(({ time, rdv }) => {
       const pill = document.createElement('div');
-      pill.className = 'rdv-pill';
-      pill.innerHTML = `<span class="time">${rdv.time_slot}</span><span class="name-text">${rdv.name}${rdv.teinture ? ' · T' : ''}</span>`;
-      pill.addEventListener('click', () => openModal(rdv));
+      if (rdv) {
+        pill.className = 'rdv-pill';
+        pill.innerHTML = `<span class="time">${rdv.time_slot}</span><span class="name-text">${rdv.name}${rdv.teinture ? ' · T' : ''}</span>`;
+        pill.addEventListener('click', (e) => { e.stopPropagation(); openModal(rdv); });
+      } else {
+        pill.className = 'slot-off-pill';
+        pill.innerHTML = `<span class="time">${time}</span><span class="label">Pas dispo</span>`;
+      }
       cell.appendChild(pill);
     });
 
@@ -473,6 +545,82 @@
     } catch(err) { console.error(err); }
   }
 
+  // ── Day modal: block / unblock one slot ───────────────
+  function openDayModal(dateStr) {
+    selectedDay = dateStr;
+    renderDayModal();
+    document.getElementById('day-modal').classList.remove('hidden');
+  }
+
+  function closeDayModal() {
+    document.getElementById('day-modal').classList.add('hidden');
+    selectedDay = null;
+  }
+
+  function renderDayModal() {
+    const d = new Date(selectedDay + 'T12:00:00');
+    const dayClosed = unavailableDays.has(selectedDay);
+    document.getElementById('day-modal-title').textContent =
+      d.toLocaleDateString('fr-BE', { weekday:'long', day:'numeric', month:'long' });
+    document.getElementById('day-modal-closed').classList.toggle('hidden', !dayClosed);
+
+    const list = document.getElementById('day-modal-slots');
+    list.innerHTML = '';
+    ALL_SLOTS.forEach(slot => {
+      const rdv = allRdvs.find(r => r.date === selectedDay && r.time_slot === slot);
+      const off = unavailableSlots.has(`${selectedDay} ${slot}`);
+      const row = document.createElement('div');
+      row.className = 'slot-row' + (rdv ? ' booked' : off ? ' off' : '');
+
+      const label = document.createElement('div');
+      label.className = 'text-sm';
+      label.innerHTML = `<span class="font-semibold" style="color:#2A1A20;">${slot}</span>`;
+      const status = document.createElement('span');
+      status.className = 'ml-2';
+      status.style.color = rdv ? '#B8607A' : off ? '#EF4444' : '#8A6070';
+      status.textContent = rdv ? rdv.name : off ? 'Pas disponible' : 'Libre';
+      label.appendChild(status);
+      row.appendChild(label);
+
+      if (!rdv) {
+        const btn = document.createElement('button');
+        btn.className = 'slot-btn';
+        btn.disabled = dayClosed;
+        if (off) {
+          btn.textContent = 'Réouvrir';
+          btn.style.cssText = 'background:#fff; color:#B8607A; border:1px solid rgba(212,132,154,0.3);';
+        } else {
+          btn.textContent = 'Bloquer';
+          btn.style.cssText = 'background:#FEF2F2; color:#EF4444; border:1px solid rgba(239,68,68,0.2);';
+        }
+        btn.addEventListener('click', () => toggleSlotBlock(slot, off, btn));
+        row.appendChild(btn);
+      }
+      list.appendChild(row);
+    });
+  }
+
+  async function toggleSlotBlock(slot, isOff, btn) {
+    btn.disabled = true;
+    try {
+      const r = await fetch('/api/admin/unavailable-slots', {
+        method: isOff ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: selectedDay, time_slot: slot }),
+      });
+      if (!r.ok) throw new Error();
+      showToast(isOff ? `${slot} réouvert` : `${slot} bloqué`);
+      await loadRdvs();
+    } catch(err) {
+      btn.textContent = 'Erreur — réessaie';
+      btn.disabled = false;
+    }
+  }
+
+  document.getElementById('day-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeDayModal();
+  });
+
   // ── Toggle edit section ───────────────────────────────
   function toggleEdit() {
     const section = document.getElementById('edit-section');
@@ -486,7 +634,6 @@
   }
 
   // ── Load available slots for edit ────────────────────
-  const ALL_SLOTS = ['11:00','12:30','14:00','15:30','17:00'];
 
   async function loadEditSlots() {
     const dateVal = document.getElementById('edit-date').value;
