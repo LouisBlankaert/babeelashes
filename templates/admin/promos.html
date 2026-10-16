@@ -8,7 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family:'Manrope',sans-serif; background:#FBF5F1; color:#1E1216; }
-    .font-serif { font-family:'Fraunces',serif; }
+    .font-serif { font-family:'Fraunces',Georgia,serif !important; font-weight:400 !important; letter-spacing:-.02em; }
 
     .media-grid {
       display:grid; gap:12px;
@@ -113,7 +113,7 @@
     .icon-btn.del { color:#EF4444; }
 
     .field label { display:block; font-size:0.8rem; font-weight:500; color:#8A6B74; margin-bottom:0.35rem; }
-    .field input[type=text], .field input[type=number], .field input[type=date] {
+    .field input[type=text], .field input[type=number], .field input[type=date], .field input[type=password] {
       width:100%; padding:0.75rem 0.9rem; border-radius:12px; font-size:16px; color:#1E1216;
       background:#FBF5F1; border:1px solid rgba(212,132,154,0.3); outline:none;
     }
@@ -134,12 +134,13 @@
          style="color:#1E1216;">
         Babeelashes
       </p>
-      <nav class="flex items-center gap-1 text-sm font-medium">
-        <a href="/admin" class="px-3 py-1.5 rounded-lg transition-colors duration-200" style="color:#8A6B74;">Agenda</a>
-        <a href="/admin/medias" class="px-3 py-1.5 rounded-lg transition-colors duration-200" style="color:#8A6B74;">Photos</a>
-        <span class="px-3 py-1.5 rounded-lg" style="color:#1E1216; background:rgba(242,197,208,0.35);">Promos</span>
+      <nav class="flex items-center gap-0.5 sm:gap-1 text-[13px] sm:text-sm font-medium overflow-x-auto">
+        <a href="/admin" class="px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors duration-200" style="color:#8A6B74;">Agenda</a>
+        <a href="/admin/medias" class="px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors duration-200" style="color:#8A6B74;">Photos</a>
+        <span class="px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap" style="color:#1E1216; background:rgba(242,197,208,0.35);">Promos</span>
+        <a href="/admin/compte" class="px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors duration-200" style="color:#8A6B74;">Compte</a>
       </nav>
-      <a href="/admin/logout" class="text-xs px-3 py-1.5 rounded-lg cursor-pointer transition-colors duration-200"
+      <a href="/admin/logout" class="hidden sm:inline-block text-xs px-3 py-1.5 rounded-lg cursor-pointer transition-colors duration-200"
          style="color:#D4849A; border:1px solid rgba(212,132,154,0.3);">
         Déconnexion
       </a>

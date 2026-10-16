@@ -13,6 +13,7 @@ from functools import wraps
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect
 from PIL import Image, ImageOps
+from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
 load_dotenv()
@@ -101,6 +102,20 @@ class Promotion(db.Model):
         }
 
 
+class AdminAccount(db.Model):
+    """Mot de passe de l'espace admin (une seule ligne), changeable depuis /admin/compte.
+    ADMIN_PASSWORD ne sert qu'à créer cette ligne au premier démarrage."""
+    __tablename__ = "admin_account"
+    id            = db.Column(db.Integer, primary_key=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    # +1 à chaque changement : déconnecte tous les appareils encore connectés
+    token_version = db.Column(db.Integer, nullable=False, default=1)
+
+
+def admin_account():
+    return AdminAccount.query.first()
+
+
 # ── Config ───────────────────────────────────────────────────────
 OPEN_HOUR     = 11
 CLOSE_HOUR    = 18
@@ -176,7 +191,11 @@ def euros(amount):
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if not session.get("admin_logged_in"):
+        account = admin_account()
+        if not session.get("admin_logged_in") or session.get("admin_version") != account.token_version:
+            session.clear()
+            if request.path.startswith("/api/"):
+                return jsonify({"error": "Session expirée, reconnecte-toi"}), 401
             return redirect(url_for("admin_login"))
         return f(*args, **kwargs)
     return decorated
@@ -430,8 +449,11 @@ def confirmation():
 def admin_login():
     error = None
     if request.method == "POST":
-        if request.form.get("password") == ADMIN_PASSWORD:
+        account = admin_account()
+        if check_password_hash(account.password_hash, request.form.get("password", "")):
             session["admin_logged_in"] = True
+            session["admin_version"] = account.token_version
+            session.permanent = True
             return redirect(url_for("admin_dashboard"))
         error = "Mot de passe incorrect"
     return render_template("admin/login.html", error=error)
@@ -447,6 +469,32 @@ def admin_logout():
 @login_required
 def admin_dashboard():
     return render_template("admin/dashboard.html", slots=TIME_SLOTS)
+
+
+@app.route("/admin/compte")
+@login_required
+def admin_compte():
+    return render_template("admin/compte.html")
+
+
+@app.route("/api/admin/password", methods=["POST"])
+@login_required
+def api_admin_password():
+    data    = request.get_json() or {}
+    account = admin_account()
+    if not check_password_hash(account.password_hash, data.get("current", "")):
+        return jsonify({"error": "Le mot de passe actuel n'est pas le bon"}), 400
+    new = data.get("new", "")
+    if len(new) < 8:
+        return jsonify({"error": "Le nouveau mot de passe doit faire au moins 8 caractères"}), 400
+    if new != data.get("confirm", ""):
+        return jsonify({"error": "Les deux nouveaux mots de passe ne sont pas identiques"}), 400
+    account.password_hash  = generate_password_hash(new)
+    account.token_version += 1
+    db.session.commit()
+    # Cet appareil reste connecté, les autres sont déconnectés
+    session["admin_version"] = account.token_version
+    return jsonify({"ok": True})
 
 
 @app.route("/api/admin/reservations")
@@ -800,6 +848,9 @@ with app.app_context():
     db.create_all()
     if first_run:
         seed_media()
+    if not AdminAccount.query.first():
+        db.session.add(AdminAccount(password_hash=generate_password_hash(ADMIN_PASSWORD)))
+        db.session.commit()
     if no_promos_yet:
         # Première promo, demandée avant que la page Promos existe
         db.session.add(Promotion(name="Halloween", price=Decimal("40.00"),

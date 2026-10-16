@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Babeelashes — Mon compte</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family:'Manrope',sans-serif; background:#FBF5F1; color:#1E1216; }
+    .font-serif { font-family:'Fraunces',Georgia,serif !important; font-weight:400 !important; letter-spacing:-.02em; }
+
+    .media-grid {
+      display:grid; gap:12px;
+      grid-template-columns: repeat(2, 1fr);
+    }
+    @media (min-width: 640px)  { .media-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 1024px) { .media-grid { grid-template-columns: repeat(4, 1fr); } }
+
+    .media-card {
+      background:#fff; border-radius:16px; overflow:hidden;
+      border:1px solid rgba(212,132,154,0.18);
+      box-shadow:0 2px 12px rgba(212,132,154,0.06);
+    }
+    .media-thumb {
+      position:relative; aspect-ratio: 4 / 5; background:#F7EFE8;
+    }
+    .media-thumb img, .media-thumb video {
+      width:100%; height:100%; object-fit:cover; display:block;
+    }
+    .badge {
+      position:absolute; top:8px; left:8px;
+      font-size:0.65rem; font-weight:600; letter-spacing:0.04em; text-transform:uppercase;
+      padding:3px 8px; border-radius:999px;
+      background:rgba(255,255,255,0.92); color:#B8607A;
+    }
+    .badge-num { left:auto; right:8px; background:rgba(42,26,32,0.7); color:#fff; }
+
+    .card-actions { display:flex; }
+    .card-actions button {
+      flex:1; height:44px; display:flex; align-items:center; justify-content:center;
+      color:#B8607A; background:transparent; border:none; cursor:pointer;
+      transition: background 0.15s;
+    }
+    .card-actions button + button { border-left:1px solid rgba(212,132,154,0.15); }
+    .card-actions button:hover:not(:disabled) { background:rgba(242,197,208,0.25); }
+    .card-actions button:disabled { color:#E5D5DA; cursor:default; }
+    .card-actions .del { color:#EF4444; }
+
+    .upload-btn {
+      display:flex; align-items:center; justify-content:center; gap:0.6rem;
+      width:100%; padding:1rem; border-radius:16px; cursor:pointer;
+      font-weight:600; color:#fff;
+      background:#1E1216;
+      box-shadow:0 6px 20px rgba(184,96,122,0.25);
+    }
+
+    .progress { height:6px; border-radius:999px; background:rgba(212,132,154,0.15); overflow:hidden; }
+    .progress > div { height:100%; width:0; background:#D4849A; transition:width 0.2s; }
+
+    #toast {
+      position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #1E1216; color: #fff;
+      padding: 0.75rem 1.5rem; border-radius: 999px;
+      font-size: 0.85rem; font-weight: 500;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      z-index: 200; max-width: calc(100vw - 2rem); text-align:center;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.error { background:#B91C1C; }
+
+    .modal-overlay {
+      position:fixed; inset:0; z-index:150;
+      background:rgba(42,26,32,0.4); backdrop-filter:blur(4px);
+      display:flex; align-items:center; justify-content:center; padding:1rem;
+      opacity:0; pointer-events:none; transition:opacity 0.2s ease;
+    }
+    .modal-overlay.open { opacity:1; pointer-events:auto; }
+    .modal-box {
+      background:#fff; border-radius:1.5rem; padding:1.5rem;
+      width:100%; max-width:340px; text-align:center;
+      border:1px solid rgba(212,132,154,0.2);
+      box-shadow:0 20px 60px rgba(212,132,154,0.2);
+      transform:translateY(12px) scale(0.98); transition:transform 0.2s ease;
+    }
+    .modal-overlay.open .modal-box { transform:none; }
+    .modal-preview {
+      width:96px; height:120px; margin:0 auto 1rem; border-radius:12px; overflow:hidden;
+      background:#F7EFE8;
+    }
+    .modal-preview img, .modal-preview video { width:100%; height:100%; object-fit:cover; display:block; }
+    .modal-btn {
+      flex:1; padding:0.8rem; border-radius:12px; font-size:0.9rem; font-weight:600; cursor:pointer;
+      transition:opacity 0.15s;
+    }
+    .modal-btn:hover { opacity:0.85; }
+
+    .promo-card {
+      background:#fff; border-radius:16px; padding:1rem 1.1rem;
+      border:1px solid rgba(212,132,154,0.18);
+      box-shadow:0 2px 12px rgba(212,132,154,0.06);
+    }
+    .promo-card.past { opacity:0.55; }
+    .status { font-size:0.65rem; font-weight:600; letter-spacing:0.04em; text-transform:uppercase;
+              padding:3px 8px; border-radius:999px; white-space:nowrap; }
+    .status.live   { background:rgba(34,197,94,0.12); color:#15803D; }
+    .status.soon   { background:rgba(242,197,208,0.45); color:#B8607A; }
+    .status.past   { background:#F3ECEE; color:#8A6B74; }
+    .icon-btn { width:40px; height:40px; display:flex; align-items:center; justify-content:center;
+                border-radius:12px; color:#B8607A; cursor:pointer; transition:background 0.15s; }
+    .icon-btn:hover { background:rgba(242,197,208,0.3); }
+    .icon-btn.del { color:#EF4444; }
+
+    .field label { display:block; font-size:0.8rem; font-weight:500; color:#8A6B74; margin-bottom:0.35rem; }
+    .field input[type=text], .field input[type=number], .field input[type=date], .field input[type=password] {
+      width:100%; padding:0.75rem 0.9rem; border-radius:12px; font-size:16px; color:#1E1216;
+      background:#FBF5F1; border:1px solid rgba(212,132,154,0.3); outline:none;
+    }
+    .field input:focus { border-color:#D4849A; box-shadow:0 0 0 3px rgba(212,132,154,0.15); }
+    .check-row { display:flex; align-items:center; gap:0.75rem; padding:0.85rem 0.9rem; border-radius:12px;
+                 background:rgba(242,197,208,0.15); border:1px solid rgba(212,132,154,0.2); cursor:pointer; }
+    .check-row input { width:20px; height:20px; accent-color:#D4849A; }
+    .modal-box.form-box { max-width:420px; text-align:left; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- Header -->
+  <header class="px-4 pt-4 pb-0 max-w-5xl mx-auto">
+    <div class="flex items-center justify-between px-5 py-3 rounded-2xl"
+         style="background:rgba(253,248,245,0.92); backdrop-filter:blur(20px); border:1px solid rgba(212,132,154,0.2); box-shadow:0 2px 20px rgba(212,132,154,0.08);">
+      <p class="font-serif text-xl font-semibold hidden sm:block"
+         style="color:#1E1216;">
+        Babeelashes
+      </p>
+      <nav class="flex items-center gap-0.5 sm:gap-1 text-[13px] sm:text-sm font-medium overflow-x-auto">
+        <a href="/admin" class="px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors duration-200" style="color:#8A6B74;">Agenda</a>
+        <a href="/admin/medias" class="px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors duration-200" style="color:#8A6B74;">Photos</a>
+        <a href="/admin/promos" class="px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors duration-200" style="color:#8A6B74;">Promos</a>
+        <span class="px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap" style="color:#1E1216; background:rgba(242,197,208,0.35);">Compte</span>
+      </nav>
+      <a href="/admin/logout" class="hidden sm:inline-block text-xs px-3 py-1.5 rounded-lg cursor-pointer transition-colors duration-200"
+         style="color:#D4849A; border:1px solid rgba(212,132,154,0.3);">
+        Déconnexion
+      </a>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto px-4 py-6">
+    <h1 class="font-serif text-2xl font-semibold">Mon mot de passe</h1>
+    <p class="text-sm mt-1 mb-6" style="color:#8A6B74;">
+      Les autres téléphones et ordinateurs connectés seront déconnectés. Celui-ci reste connecté.
+    </p>
+
+    <form id="pw-form" class="promo-card space-y-4" novalidate>
+      <div class="field">
+        <label for="current">Mot de passe actuel</label>
+        <input id="current" type="password" autocomplete="current-password" required/>
+      </div>
+      <div class="field">
+        <label for="new">Nouveau mot de passe (8 caractères minimum)</label>
+        <input id="new" type="password" autocomplete="new-password" minlength="8" required/>
+      </div>
+      <div class="field">
+        <label for="confirm">Nouveau mot de passe, encore une fois</label>
+        <input id="confirm" type="password" autocomplete="new-password" minlength="8" required/>
+      </div>
+      <label class="flex items-center gap-2 text-sm cursor-pointer" style="color:#8A6B74;">
+        <input id="show" type="checkbox" style="accent-color:#D4849A;"/> Afficher les mots de passe
+      </label>
+      <p id="error" class="text-sm hidden" style="color:#B91C1C;"></p>
+      <button type="submit" id="save" class="upload-btn">Changer mon mot de passe</button>
+    </form>
+
+    <a href="/admin/logout" class="block text-center text-sm mt-8 py-3 rounded-xl"
+       style="color:#A94E6A; border:1px solid rgba(212,132,154,0.3);">Se déconnecter</a>
+  </main>
+
+  <div id="toast"></div>
+
+<script>
+  const fields = ['current', 'new', 'confirm'].map(id => document.getElementById(id));
+
+  document.getElementById('show').onchange = e =>
+    fields.forEach(f => f.type = e.target.checked ? 'text' : 'password');
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(() => t.classList.remove('show'), 4000);
+  }
+
+  document.getElementById('pw-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const err  = document.getElementById('error');
+    const save = document.getElementById('save');
+    err.classList.add('hidden');
+    save.disabled = true;
+    try {
+      const r = await fetch('/api/admin/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current: fields[0].value, new: fields[1].value, confirm: fields[2].value }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        err.textContent = data.error || "Le mot de passe n'a pas pu être changé";
+        err.classList.remove('hidden');
+        return;
+      }
+      fields.forEach(f => f.value = '');
+      showToast('Mot de passe changé');
+    } finally {
+      save.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

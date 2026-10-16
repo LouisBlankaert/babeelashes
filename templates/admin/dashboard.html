@@ -8,7 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family:'Manrope',sans-serif; background:#FBF5F1; color:#1E1216; }
-    .font-serif { font-family:'Fraunces',Georgia,serif; font-weight:400 !important; letter-spacing:-.02em; }
+    .font-serif { font-family:'Fraunces',Georgia,serif !important; font-weight:400 !important; letter-spacing:-.02em; }
 
     /* ── Calendar grid ── */
     .cal-grid {
@@ -158,12 +158,13 @@
          style="color:#1E1216;">
         Babeelashes
       </p>
-      <nav class="flex items-center gap-1 text-sm font-medium">
-        <span class="px-3 py-1.5 rounded-lg" style="color:#1E1216; background:rgba(242,197,208,0.35);">Agenda</span>
-        <a href="/admin/medias" class="px-3 py-1.5 rounded-lg transition-colors duration-200" style="color:#8A6B74;">Photos</a>
-        <a href="/admin/promos" class="px-3 py-1.5 rounded-lg transition-colors duration-200" style="color:#8A6B74;">Promos</a>
+      <nav class="flex items-center gap-0.5 sm:gap-1 text-[13px] sm:text-sm font-medium overflow-x-auto">
+        <span class="px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap" style="color:#1E1216; background:rgba(242,197,208,0.35);">Agenda</span>
+        <a href="/admin/medias" class="px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors duration-200" style="color:#8A6B74;">Photos</a>
+        <a href="/admin/promos" class="px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors duration-200" style="color:#8A6B74;">Promos</a>
+        <a href="/admin/compte" class="px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors duration-200" style="color:#8A6B74;">Compte</a>
       </nav>
-      <a href="/admin/logout" class="text-xs px-3 py-1.5 rounded-lg cursor-pointer transition-colors duration-200"
+      <a href="/admin/logout" class="hidden sm:inline-block text-xs px-3 py-1.5 rounded-lg cursor-pointer transition-colors duration-200"
          style="color:#D4849A; border:1px solid rgba(212,132,154,0.3);">
         Déconnexion
       </a>
