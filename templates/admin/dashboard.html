@@ -4,10 +4,11 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Babeelashes — Agenda</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { font-family:'Inter',sans-serif; background:#FDF8F5; color:#2A1A20; }
+    body { font-family:'Manrope',sans-serif; background:#FBF5F1; color:#1E1216; }
+    .font-serif { font-family:'Fraunces',Georgia,serif; font-weight:400 !important; letter-spacing:-.02em; }
 
     /* ── Calendar grid ── */
     .cal-grid {
@@ -35,7 +36,7 @@
     .cal-cell.other-month { background: rgba(253,248,245,0.5); opacity:0.5; }
     .cal-cell.today .day-num { color:#D4849A; font-weight:700; }
     .day-num {
-      font-size:0.8rem; font-weight:500; color:#2A1A20;
+      font-size:0.8rem; font-weight:500; color:#1E1216;
       margin-bottom:4px;
     }
 
@@ -53,7 +54,7 @@
     }
     .rdv-pill:hover { background: rgba(212,132,154,0.25); }
     .rdv-pill .time { font-weight:600; color:#B8607A; margin-right:4px; }
-    .rdv-pill .name-text { color:#2A1A20; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .rdv-pill .name-text { color:#1E1216; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
     /* ── Modal ── */
     .modal-overlay {
@@ -133,7 +134,7 @@
     /* ── Toast ── */
     #toast {
       position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(20px);
-      background: #2A1A20; color: #fff;
+      background: #1E1216; color: #fff;
       padding: 0.75rem 1.5rem; border-radius: 999px;
       font-size: 0.85rem; font-weight: 500;
       display: flex; align-items: center; gap: 0.5rem;
@@ -153,13 +154,14 @@
   <header class="px-4 pt-4 pb-0 max-w-7xl mx-auto">
     <div class="flex items-center justify-between px-5 py-3 rounded-2xl"
          style="background:rgba(253,248,245,0.92); backdrop-filter:blur(20px); border:1px solid rgba(212,132,154,0.2); box-shadow:0 2px 20px rgba(212,132,154,0.08);">
-      <p class="font-serif text-xl font-semibold"
-         style="background:linear-gradient(135deg,#F2C5D0,#D4849A,#B8607A);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+      <p class="font-serif text-xl font-semibold hidden sm:block"
+         style="color:#1E1216;">
         Babeelashes
       </p>
       <nav class="flex items-center gap-1 text-sm font-medium">
-        <span class="px-3 py-1.5 rounded-lg" style="color:#2A1A20; background:rgba(242,197,208,0.35);">Agenda</span>
-        <a href="/admin/medias" class="px-3 py-1.5 rounded-lg transition-colors duration-200" style="color:#8A6070;">Photos</a>
+        <span class="px-3 py-1.5 rounded-lg" style="color:#1E1216; background:rgba(242,197,208,0.35);">Agenda</span>
+        <a href="/admin/medias" class="px-3 py-1.5 rounded-lg transition-colors duration-200" style="color:#8A6B74;">Photos</a>
+        <a href="/admin/promos" class="px-3 py-1.5 rounded-lg transition-colors duration-200" style="color:#8A6B74;">Promos</a>
       </nav>
       <a href="/admin/logout" class="text-xs px-3 py-1.5 rounded-lg cursor-pointer transition-colors duration-200"
          style="color:#D4849A; border:1px solid rgba(212,132,154,0.3);">
@@ -178,8 +180,8 @@
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
       <div class="text-center">
-        <h1 id="month-title" class="font-serif text-2xl font-semibold" style="color:#2A1A20;"></h1>
-        <p id="month-count" class="text-xs mt-0.5" style="color:#8A6070;"></p>
+        <h1 id="month-title" class="font-serif text-2xl font-semibold" style="color:#1E1216;"></h1>
+        <p id="month-count" class="text-xs mt-0.5" style="color:#8A6B74;"></p>
       </div>
       <button id="next-month" class="w-9 h-9 flex items-center justify-center rounded-full cursor-pointer transition-all duration-200"
               style="background:rgba(212,132,154,0.08); border:1px solid rgba(212,132,154,0.2); color:#D4849A;">
@@ -208,17 +210,17 @@
       <div class="flex items-start justify-between mb-5">
         <div>
           <p class="text-xs tracking-widest uppercase mb-1" style="color:#D4849A;">Disponibilités</p>
-          <h2 id="day-modal-title" class="font-serif text-2xl font-semibold" style="color:#2A1A20;"></h2>
+          <h2 id="day-modal-title" class="font-serif text-2xl font-semibold" style="color:#1E1216;"></h2>
         </div>
         <button onclick="closeDayModal()" class="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer"
-                style="background:rgba(212,132,154,0.1); color:#8A6070;">
+                style="background:rgba(212,132,154,0.1); color:#8A6B74;">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
       <p id="day-modal-closed" class="text-xs mb-3 hidden" style="color:#EF4444;">
         Toute la journée est fermée. Réouvre-la avec le cadenas pour gérer les heures une par une.
       </p>
-      <p class="text-xs mb-3" style="color:#8A6070;">Bloque une heure où tu n'es pas disponible : les clientes ne pourront plus la réserver.</p>
+      <p class="text-xs mb-3" style="color:#8A6B74;">Bloque une heure où tu n'es pas disponible : les clientes ne pourront plus la réserver.</p>
       <div id="day-modal-slots" class="space-y-2"></div>
     </div>
   </div>
@@ -229,10 +231,10 @@
       <div class="flex items-start justify-between mb-5">
         <div>
           <p class="text-xs tracking-widest uppercase mb-1" style="color:#D4849A;">Rendez-vous</p>
-          <h2 id="modal-name" class="font-serif text-2xl font-semibold" style="color:#2A1A20;"></h2>
+          <h2 id="modal-name" class="font-serif text-2xl font-semibold" style="color:#1E1216;"></h2>
         </div>
         <button onclick="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer"
-                style="background:rgba(212,132,154,0.1); color:#8A6070;">
+                style="background:rgba(212,132,154,0.1); color:#8A6B74;">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -243,8 +245,8 @@
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
           </div>
           <div>
-            <p class="text-xs" style="color:#8A6070;">Date</p>
-            <p id="modal-date" class="text-sm font-medium" style="color:#2A1A20;"></p>
+            <p class="text-xs" style="color:#8A6B74;">Date</p>
+            <p id="modal-date" class="text-sm font-medium" style="color:#1E1216;"></p>
           </div>
         </div>
         <div class="flex items-center gap-3">
@@ -252,8 +254,8 @@
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
           </div>
           <div>
-            <p class="text-xs" style="color:#8A6070;">Heure</p>
-            <p id="modal-time" class="text-sm font-medium" style="color:#2A1A20;"></p>
+            <p class="text-xs" style="color:#8A6B74;">Heure</p>
+            <p id="modal-time" class="text-sm font-medium" style="color:#1E1216;"></p>
           </div>
         </div>
         <div class="flex items-center gap-3">
@@ -261,8 +263,8 @@
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
           </div>
           <div>
-            <p class="text-xs" style="color:#8A6070;">Instagram</p>
-            <p id="modal-instagram" class="text-sm font-medium" style="color:#2A1A20;"></p>
+            <p class="text-xs" style="color:#8A6B74;">Instagram</p>
+            <p id="modal-instagram" class="text-sm font-medium" style="color:#1E1216;"></p>
           </div>
         </div>
         <div class="flex items-center gap-3" id="modal-phone-row">
@@ -270,8 +272,8 @@
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="1.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
           </div>
           <div>
-            <p class="text-xs" style="color:#8A6070;">Téléphone</p>
-            <p id="modal-phone" class="text-sm font-medium" style="color:#2A1A20;"></p>
+            <p class="text-xs" style="color:#8A6B74;">Téléphone</p>
+            <p id="modal-phone" class="text-sm font-medium" style="color:#1E1216;"></p>
           </div>
         </div>
         <div class="flex items-center gap-3" id="modal-email-row">
@@ -279,8 +281,8 @@
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
           </div>
           <div>
-            <p class="text-xs" style="color:#8A6070;">Email</p>
-            <p id="modal-email" class="text-sm font-medium" style="color:#2A1A20;"></p>
+            <p class="text-xs" style="color:#8A6B74;">Email</p>
+            <p id="modal-email" class="text-sm font-medium" style="color:#1E1216;"></p>
           </div>
         </div>
         <div class="flex items-center gap-3">
@@ -288,7 +290,7 @@
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
           </div>
           <div>
-            <p class="text-xs" style="color:#8A6070;">Montant</p>
+            <p class="text-xs" style="color:#8A6B74;">Montant</p>
             <p id="modal-price" class="text-sm font-semibold" style="color:#D4849A;"></p>
             <p id="modal-teinture" class="text-xs mt-0.5 hidden">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full"
@@ -301,20 +303,20 @@
       <!-- Modifier section -->
       <div id="edit-section" class="mb-4 hidden">
         <div class="h-px mb-4" style="background:rgba(212,132,154,0.12);"></div>
-        <p class="text-xs font-medium mb-3" style="color:#8A6070;">Déplacer le rendez-vous</p>
+        <p class="text-xs font-medium mb-3" style="color:#8A6B74;">Déplacer le rendez-vous</p>
         <div class="flex gap-2 mb-3">
           <div class="flex-1">
             <p class="text-xs mb-1" style="color:#C4A8B0;">Nouvelle date</p>
             <input type="date" id="edit-date"
                    class="w-full text-sm px-3 py-2 rounded-xl outline-none"
-                   style="border:1px solid rgba(212,132,154,0.3); color:#2A1A20; background:#FDF8F5;"
+                   style="border:1px solid rgba(212,132,154,0.3); color:#1E1216; background:#FBF5F1;"
                    onchange="loadEditSlots()" />
           </div>
           <div class="flex-1">
             <p class="text-xs mb-1" style="color:#C4A8B0;">Nouveau créneau</p>
             <select id="edit-slot"
                     class="w-full text-sm px-3 py-2 rounded-xl outline-none"
-                    style="border:1px solid rgba(212,132,154,0.3); color:#2A1A20; background:#FDF8F5;">
+                    style="border:1px solid rgba(212,132,154,0.3); color:#1E1216; background:#FBF5F1;">
               <option value="">— choisir —</option>
             </select>
           </div>
@@ -322,7 +324,7 @@
         <p id="edit-error" class="text-xs mb-2 hidden" style="color:#EF4444;"></p>
         <button id="save-btn" onclick="saveRdv()"
                 class="w-full py-2.5 rounded-xl text-sm font-medium cursor-pointer transition-all duration-200"
-                style="background:linear-gradient(135deg,#E8A0B4,#D4849A); color:#fff;">
+                style="background:#1E1216; color:#fff;">
           Enregistrer le déplacement
         </button>
       </div>
@@ -574,10 +576,10 @@
 
       const label = document.createElement('div');
       label.className = 'text-sm';
-      label.innerHTML = `<span class="font-semibold" style="color:#2A1A20;">${slot}</span>`;
+      label.innerHTML = `<span class="font-semibold" style="color:#1E1216;">${slot}</span>`;
       const status = document.createElement('span');
       status.className = 'ml-2';
-      status.style.color = rdv ? '#B8607A' : off ? '#EF4444' : '#8A6070';
+      status.style.color = rdv ? '#B8607A' : off ? '#EF4444' : '#8A6B74';
       status.textContent = rdv ? rdv.name : off ? 'Pas disponible' : 'Libre';
       label.appendChild(status);
       row.appendChild(label);

@@ -82,6 +82,25 @@ class Media(db.Model):
         return url_for("media_file", filename=self.filename)
 
 
+class Promotion(db.Model):
+    """Prix spécial sur une période (Halloween, Noël…), créé par la cliente dans /admin/promos.
+    S'applique aux rendez-vous dont la date tombe entre start_date et end_date inclus."""
+    __tablename__ = "promotions"
+    id                 = db.Column(db.Integer, primary_key=True)
+    name               = db.Column(db.String(80), nullable=False)
+    price              = db.Column(db.Numeric(6, 2), nullable=False)
+    start_date         = db.Column(db.Date, nullable=False)
+    end_date           = db.Column(db.Date, nullable=False)
+    teinture_included  = db.Column(db.Boolean, default=False, nullable=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id, "name": self.name, "price": short_amount(self.price),
+            "start_date": self.start_date.isoformat(), "end_date": self.end_date.isoformat(),
+            "teinture_included": self.teinture_included,
+        }
+
+
 # ── Config ───────────────────────────────────────────────────────
 OPEN_HOUR     = 11
 CLOSE_HOUR    = 18
@@ -89,10 +108,8 @@ SLOT_DURATION = 90
 SLOTS         = ["11:00", "12:15", "13:30", "15:00", "16:15", "17:30"]
 PRICE_WEEK    = Decimal("45.00")
 PRICE_WEEKEND = Decimal("50.00")
-PRICE_PROMO   = Decimal("20.00")
 DEPOSIT         = Decimal("10.00")
 PRICE_TEINTURE  = Decimal("5.00")
-PROMO_UNTIL     = date(2026, 4, 30)
 BANK_IBAN        = os.getenv("BANK_IBAN", "BE58 6503 2990 2279")
 BANK_NAME        = os.getenv("BANK_NAME", "Babeelashes")
 ADMIN_PASSWORD   = os.getenv("ADMIN_PASSWORD", "admin")
@@ -129,6 +146,33 @@ def convert_video(src, dest):
 
 
 
+def short_amount(amount):
+    """Decimal("40.00") → "40", Decimal("39.50") → "39.5" """
+    return f"{Decimal(amount).normalize():f}"
+
+
+MOIS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet",
+           "août", "septembre", "octobre", "novembre", "décembre"]
+
+
+@app.context_processor
+def inject_promos():
+    """Bandeau promo en haut de toutes les pages publiques."""
+    return {"promos": visible_promos(), "tomorrow": date.today() + timedelta(days=1)}
+
+
+@app.template_filter("date_fr")
+def date_fr(d):
+    """date(2026, 10, 30) → « 30 octobre »"""
+    return f"{d.day} {MOIS_FR[d.month - 1]}"
+
+
+@app.template_filter("euros")
+def euros(amount):
+    """Decimal("40.00") → « 40€ », Decimal("39.50") → « 39,50€ »"""
+    return short_amount(amount).replace(".", ",") + "€"
+
+
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -141,7 +185,13 @@ def login_required(f):
 def send_booking_notification(name, instagram, phone, email, booking_date, time_slot, price, teinture):
     if not ADMIN_EMAIL or not resend.api_key:
         return
-    teinture_line = "<br><strong>Teinture :</strong> Oui (+5€)" if teinture else ""
+    promo = get_promo(booking_date)
+    teinture_line = ""
+    if teinture:
+        extra = "incluse dans la promo" if promo and promo.teinture_included else "+5€"
+        teinture_line = f"<br><strong>Teinture :</strong> Oui ({extra})"
+    if promo:
+        teinture_line += f"<br><strong>Promo :</strong> {promo.name}"
     phone_line = f"<br><strong>Téléphone :</strong> {phone}" if phone else ""
     email_line = f"<br><strong>Email :</strong> {email}" if email else ""
     try:
@@ -165,10 +215,57 @@ def send_booking_notification(name, instagram, phone, email, booking_date, time_
         pass
 
 
-def get_price(booking_date: date) -> Decimal:
-    if booking_date <= PROMO_UNTIL:
-        return PRICE_PROMO
-    return PRICE_WEEKEND if booking_date.weekday() == 6 else PRICE_WEEK
+def get_promo(booking_date: date):
+    """Promo qui couvre cette date ; si deux se chevauchent, la moins chère."""
+    return Promotion.query.filter(
+        Promotion.start_date <= booking_date,
+        Promotion.end_date >= booking_date,
+    ).order_by(Promotion.price, Promotion.id).first()
+
+
+def get_price(booking_date: date, teinture: bool = False) -> Decimal:
+    """Prix total du rendez-vous, teinture comprise."""
+    promo = get_promo(booking_date)
+    if promo:
+        base = promo.price
+        if promo.teinture_included:
+            return base
+    else:
+        base = PRICE_WEEKEND if booking_date.weekday() == 6 else PRICE_WEEK
+    return base + (PRICE_TEINTURE if teinture else Decimal("0"))
+
+
+JOURS_FR = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+
+
+def next_free_slot():
+    """Premier créneau libre à partir de demain, pour la page d'accueil. None si tout est pris."""
+    start = date.today() + timedelta(days=1)
+    end   = date.today() + timedelta(days=60)
+    closed = {d.date for d in UnavailableDay.query.filter(UnavailableDay.date.between(start, end))}
+    taken  = {(r.date, r.time_slot) for r in Reservation.query.filter(
+        Reservation.date.between(start, end), Reservation.paid == True)}
+    taken |= {(s.date, s.time_slot) for s in UnavailableSlot.query.filter(
+        UnavailableSlot.date.between(start, end))}
+    d = start
+    while d <= end:
+        if d not in closed:
+            for slot in TIME_SLOTS:
+                if (d, slot) not in taken:
+                    day = "Demain" if d == start else f"{JOURS_FR[d.weekday()]} {d.day} {MOIS_FR[d.month - 1]}"
+                    return f"{day} · {slot}"
+        d += timedelta(days=1)
+    return None
+
+
+def visible_promos():
+    """Promos à afficher sur la page d'accueil : celles qu'on peut encore réserver
+    (dates de demain à +60 jours, comme le calendrier de réservation)."""
+    tomorrow = date.today() + timedelta(days=1)
+    return Promotion.query.filter(
+        Promotion.end_date >= tomorrow,
+        Promotion.start_date <= date.today() + timedelta(days=60),
+    ).order_by(Promotion.start_date).all()
 
 
 def generate_slots():
@@ -182,8 +279,9 @@ TIME_SLOTS = generate_slots()
 @app.route("/")
 def index():
     media = Media.query.order_by(Media.position, Media.id).all()
-    promo_active = date.today() <= PROMO_UNTIL
-    return render_template("index.html", media=media, promo_active=promo_active)
+    return render_template("index.html", media=media, next_slot=next_free_slot(),
+                           price_week=PRICE_WEEK, price_weekend=PRICE_WEEKEND,
+                           price_teinture=PRICE_TEINTURE, deposit=DEPOSIT)
 
 
 @app.route("/media/<path:filename>")
@@ -233,8 +331,9 @@ def booking():
             errors["time_slot"] = "Ce créneau n'est pas disponible"
 
         if not errors:
-            teinture = request.form.get("teinture") == "1"
-            price    = get_price(booking_date) + (PRICE_TEINTURE if teinture else Decimal("0"))
+            promo    = get_promo(booking_date)
+            teinture = request.form.get("teinture") == "1" or bool(promo and promo.teinture_included)
+            price    = get_price(booking_date, teinture)
             existing = Reservation.query.filter_by(date=booking_date, time_slot=time_slot, paid=True).first()
             if existing:
                 errors["time_slot"] = "Ce créneau est déjà pris"
@@ -264,8 +363,13 @@ def booking():
 def api_price():
     try:
         booking_date = date.fromisoformat(request.args.get("date", ""))
-        price = get_price(booking_date)
-        return jsonify({"price": str(price), "is_promo": booking_date <= PROMO_UNTIL})
+        promo = get_promo(booking_date)
+        return jsonify({
+            "price": str(get_price(booking_date)),
+            "is_promo": promo is not None,
+            "promo_name": promo.name if promo else None,
+            "teinture_included": bool(promo and promo.teinture_included),
+        })
     except ValueError:
         return jsonify({"error": "Invalid date"}), 400
 
@@ -310,12 +414,16 @@ def confirmation():
         remaining = f"{Decimal(price) - DEPOSIT:.2f}"
     except Exception:
         remaining = price
+    try:
+        promo = get_promo(date.fromisoformat(booking_date))
+    except ValueError:
+        promo = None
 
     return render_template("confirmation.html",
                            name=name, booking_date=booking_date,
                            time=time, price=price, remaining=remaining,
                            iban=BANK_IBAN, bank_name=BANK_NAME,
-                           deposit=str(DEPOSIT), teinture=teinture)
+                           deposit=str(DEPOSIT), teinture=teinture, promo=promo)
 
 
 @app.route("/admin/login", methods=["GET", "POST"])
@@ -592,6 +700,76 @@ def api_admin_media_delete(media_id):
     return jsonify({"ok": True})
 
 
+@app.route("/admin/promos")
+@login_required
+def admin_promos():
+    return render_template("admin/promos.html", price_week=short_amount(PRICE_WEEK),
+                           price_weekend=short_amount(PRICE_WEEKEND), today=date.today().isoformat())
+
+
+def promo_from_json(promo, data):
+    """Remplit une promo depuis le formulaire de l'admin ; renvoie un message d'erreur ou None."""
+    name = (data.get("name") or "").strip()
+    if not name:
+        return "Donne un nom à la promo (ex. Halloween)"
+    try:
+        price = Decimal(str(data.get("price", "")).replace(",", "."))
+    except Exception:
+        return "Prix invalide"
+    if not Decimal("0") < price < Decimal("1000"):
+        return "Prix invalide"
+    try:
+        start = date.fromisoformat(data.get("start_date", ""))
+        end   = date.fromisoformat(data.get("end_date", ""))
+    except (ValueError, TypeError):
+        return "Dates invalides"
+    if end < start:
+        return "La date de fin est avant la date de début"
+    promo.name, promo.price = name[:80], price
+    promo.start_date, promo.end_date = start, end
+    promo.teinture_included = bool(data.get("teinture_included"))
+    return None
+
+
+@app.route("/api/admin/promos")
+@login_required
+def api_admin_promos():
+    promos = Promotion.query.order_by(Promotion.start_date.desc()).all()
+    return jsonify([p.to_dict() for p in promos])
+
+
+@app.route("/api/admin/promos", methods=["POST"])
+@login_required
+def api_admin_promo_add():
+    promo = Promotion()
+    error = promo_from_json(promo, request.get_json() or {})
+    if error:
+        return jsonify({"error": error}), 400
+    db.session.add(promo)
+    db.session.commit()
+    return jsonify(promo.to_dict())
+
+
+@app.route("/api/admin/promos/<int:promo_id>", methods=["PUT"])
+@login_required
+def api_admin_promo_update(promo_id):
+    promo = Promotion.query.get_or_404(promo_id)
+    error = promo_from_json(promo, request.get_json() or {})
+    if error:
+        db.session.rollback()
+        return jsonify({"error": error}), 400
+    db.session.commit()
+    return jsonify(promo.to_dict())
+
+
+@app.route("/api/admin/promos/<int:promo_id>", methods=["DELETE"])
+@login_required
+def api_admin_promo_delete(promo_id):
+    db.session.delete(Promotion.query.get_or_404(promo_id))
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
 @app.errorhandler(413)
 def too_large(_):
     return jsonify({"error": "Fichier trop lourd (300 Mo maximum)"}), 413
@@ -618,9 +796,16 @@ def seed_media():
 
 with app.app_context():
     first_run = not inspect(db.engine).has_table("media")
+    no_promos_yet = not inspect(db.engine).has_table("promotions")
     db.create_all()
     if first_run:
         seed_media()
+    if no_promos_yet:
+        # Première promo, demandée avant que la page Promos existe
+        db.session.add(Promotion(name="Halloween", price=Decimal("40.00"),
+                                 start_date=date(2026, 10, 16), end_date=date(2026, 10, 30),
+                                 teinture_included=True))
+        db.session.commit()
     # Gunicorn --preload : les workers ne doivent pas hériter des connexions du process parent
     db.engine.dispose()
 

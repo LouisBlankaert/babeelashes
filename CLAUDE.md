@@ -13,8 +13,7 @@
 - Semaine (lundi-samedi) : 45€ (depuis le 01/10/2026 — avant : 35€)
 - Dimanche : 50€ (avant : 40€)
 - Option teinture : +5€ (sélectionnable dans le formulaire de réservation)
-- Promotion **expirée** : 20€ était valable jusqu'au 30 avril 2026 (plus affichée)
-- Logique : `promo_active = date.today() <= PROMO_UNTIL` passé au template
+- Promotions : gérées par la cliente dans `/admin/promos` (voir plus bas)
 
 ## Acompte virement bancaire
 - Montant : 10€ (variable `DEPOSIT` dans app.py)
@@ -48,8 +47,9 @@
 ## Stack
 - Python 3 + Flask + SQLAlchemy + Gunicorn
 - SQLite en dev (`instance/babelash.db`), PostgreSQL en prod (Railway)
-- Jinja2 + Tailwind CSS via CDN
-- Google Fonts : Playfair Display + Inter
+- Jinja2 + Tailwind CSS via CDN + `static/css/site.css` (design commun, refait le 17/10/2026)
+- Google Fonts : Fraunces (titres) + Manrope (texte) ; couleurs : encre #1E1216, rose #A94E6A, crème #FBF5F1
+- `base.html` porte le bandeau promo, la nav (menu téléphone) et le pied de page de toutes les pages publiques ; `_macros.html` = helpers promo
 
 ## Modèle Reservation
 - Champs : id, name, phone, email, date, time_slot, price, teinture, paid, created_at
@@ -99,6 +99,14 @@ venv/bin/pip install -r requirements.txt
 - À l'envoi : photos → JPEG 1600 px (Pillow, orientation corrigée) ; vidéos → MP4 H.264 720p sans son (ffmpeg). Les vidéos iPhone sont en HEVC, illisibles sur Chrome/Android
 - Premier lancement (table `media` absente) : `static/img/` est copié dans `UPLOAD_DIR` comme contenu de départ
 - Gunicorn en `--preload --timeout 300` (Dockerfile)
+
+## Promotions (`/admin/promos`)
+- Table `promotions` : name, price, start_date, end_date (incluse), teinture_included — créée par `db.create_all()`
+- S'applique selon la **date du rendez-vous** (pas la date de réservation) ; si deux promos se chevauchent, la moins chère gagne (`get_promo`)
+- `teinture_included` : la teinture est cochée d'office et gratuite (formulaire + serveur)
+- Page d'accueil : badge + carte pour chaque promo réservable (de demain à +60 j, `visible_promos`)
+- À la création de la table, la promo **Halloween** est ajoutée : 40€ teinture comprise, du 16 au 30/10/2026
+- Les RDV déjà pris gardent leur prix si on modifie/supprime une promo
 
 ## Réseaux sociaux
 - TikTok et Instagram affichés sur la landing page

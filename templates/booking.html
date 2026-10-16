@@ -8,18 +8,18 @@
   .slot-btn {
     transition: all 0.2s ease;
     cursor: pointer;
-    color: #8A6070;
+    color: #8A6B74;
     border: 1px solid rgba(212,132,154,0.2);
     background: #FFFFFF;
   }
   .slot-btn:hover:not(:disabled) {
     border-color: rgba(212,132,154,0.5);
     background: rgba(242,197,208,0.15);
-    color: #D4849A;
+    color:#A94E6A;
   }
   .slot-btn.selected {
     background: rgba(242,197,208,0.3);
-    border-color: #D4849A;
+    border-color:#A94E6A;
     color: #B8607A;
     font-weight: 600;
   }
@@ -33,7 +33,7 @@
   .form-input {
     background: #FFFFFF;
     border: 1px solid rgba(212,132,154,0.25);
-    color: #2A1A20;
+    color: #1E1216;
     border-radius: 0.75rem;
     padding: 0.875rem 1rem;
     width: 100%;
@@ -52,7 +52,7 @@
     display: block;
     font-size: 0.8125rem;
     font-weight: 500;
-    color: #8A6070;
+    color: #8A6B74;
     margin-bottom: 0.5rem;
     letter-spacing: 0.03em;
   }
@@ -61,7 +61,7 @@
   /* ── Toast ── */
   #toast {
     position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(20px);
-    background: #2A1A20; color: #fff;
+    background: #1E1216; color: #fff;
     padding: 0.75rem 1.5rem; border-radius: 999px;
     font-size: 0.85rem; font-weight: 500;
     display: flex; align-items: center; gap: 0.5rem;
@@ -95,7 +95,7 @@
     border: 1px solid rgba(212,132,154,0.15);
     cursor: pointer;
     transition: all 0.2s;
-    color: #D4849A;
+    color:#A94E6A;
   }
   .cal-nav:hover { background: rgba(212,132,154,0.18); }
   .cal-grid {
@@ -122,7 +122,7 @@
     font-size: 0.875rem;
     transition: all 0.15s ease;
     cursor: pointer;
-    color: #2A1A20;
+    color: #1E1216;
     position: relative;
   }
   .cal-day:hover:not(.disabled):not(.past) {
@@ -131,7 +131,7 @@
   }
   .cal-day.today {
     font-weight: 600;
-    color: #D4849A;
+    color:#A94E6A;
   }
   .cal-day.today::after {
     content: '';
@@ -144,7 +144,7 @@
     background: #D4849A;
   }
   .cal-day.selected {
-    background: linear-gradient(135deg, #E8A0B4, #D4849A) !important;
+    background: #1E1216 !important;
     color: #fff !important;
     font-weight: 600;
   }
@@ -161,20 +161,20 @@
 
 {% block content %}
 <div id="toast"><span class="toast-icon">⚠️</span> <span id="toast-msg"></span></div>
-<div class="min-h-screen pt-28 pb-24 px-4 sm:px-6" style="background: var(--creme);">
+<div class="min-h-screen pt-10 pb-24 px-4 sm:px-6" style="background: var(--creme);">
   <div class="max-w-2xl mx-auto">
 
     <!-- Header -->
     <div class="text-center mb-10">
       <a href="/" class="inline-flex items-center gap-2 text-sm mb-6 cursor-pointer transition-colors duration-200"
-         style="color:#8A6070;" onmouseover="this.style.color='#D4849A'" onmouseout="this.style.color='#8A6070'">
+         style="color:#8A6B74;" onmouseover="this.style.color='#D4849A'" onmouseout="this.style.color='#8A6B74'">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
         Retour
       </a>
-      <h1 class="font-serif text-4xl md:text-5xl font-semibold mb-2" style="color:#2A1A20;">
+      <h1 class="font-serif text-4xl md:text-5xl font-semibold mb-2" style="color:#1E1216;">
         Votre <em class="text-rose-gradient not-italic">rendez-vous</em>
       </h1>
-      <p style="color:#8A6070;">Rehaussement de cils · 1h · Bruxelles</p>
+      <p style="color:#8A6B74;">Rehaussement de cils · 1h · Bruxelles</p>
     </div>
 
     <!-- Card -->
@@ -189,9 +189,9 @@
 
         <!-- ── ÉTAPE 1 : Calendrier ── -->
         <div class="mb-8">
-          <h2 class="font-serif text-xl font-medium mb-5 flex items-center gap-3" style="color:#2A1A20;">
+          <h2 class="font-serif text-xl font-medium mb-5 flex items-center gap-3" style="color:#1E1216;">
             <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0"
-                  style="background:linear-gradient(135deg,#E8A0B4,#D4849A);">1</span>
+                  style="background:#1E1216;">1</span>
             Choisissez votre date
           </h2>
 
@@ -201,7 +201,7 @@
               <button type="button" class="cal-nav" id="cal-prev" aria-label="Mois précédent">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
               </button>
-              <p id="cal-title" class="font-serif text-base font-semibold" style="color:#2A1A20;"></p>
+              <p id="cal-title" class="font-serif text-base font-semibold" style="color:#1E1216;"></p>
               <button type="button" class="cal-nav" id="cal-next" aria-label="Mois suivant">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
@@ -212,9 +212,9 @@
           <!-- Selected date display -->
           <div id="selected-date-display" class="mt-3 hidden flex items-center gap-2 text-sm">
             <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#D4849A" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-            <span style="color:#8A6070;">Sélectionné :</span>
-            <span id="selected-date-text" class="font-medium" style="color:#2A1A20;"></span>
-            <span id="price-display" class="ml-2 font-semibold" style="color:#D4849A;"></span>
+            <span style="color:#8A6B74;">Sélectionné :</span>
+            <span id="selected-date-text" class="font-medium" style="color:#1E1216;"></span>
+            <span id="price-display" class="ml-2 font-semibold" style="color:#A94E6A;"></span>
           </div>
           {% if errors.date %}<p class="error-msg mt-2" role="alert">{{ errors.date }}</p>{% endif %}
         </div>
@@ -223,9 +223,9 @@
 
         <!-- ── ÉTAPE 2 : Créneaux ── -->
         <div class="mb-8">
-          <h2 class="font-serif text-xl font-medium mb-5 flex items-center gap-3" style="color:#2A1A20;">
+          <h2 class="font-serif text-xl font-medium mb-5 flex items-center gap-3" style="color:#1E1216;">
             <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0"
-                  style="background:linear-gradient(135deg,#E8A0B4,#D4849A);">2</span>
+                  style="background:#1E1216;">2</span>
             Choisissez votre créneau
           </h2>
 
@@ -252,9 +252,9 @@
 
         <!-- ── ÉTAPE 3 : Contact ── -->
         <div class="mb-8">
-          <h2 class="font-serif text-xl font-medium mb-5 flex items-center gap-3" style="color:#2A1A20;">
+          <h2 class="font-serif text-xl font-medium mb-5 flex items-center gap-3" style="color:#1E1216;">
             <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0"
-                  style="background:linear-gradient(135deg,#E8A0B4,#D4849A);">3</span>
+                  style="background:#1E1216;">3</span>
             Vos coordonnées
           </h2>
           <div class="space-y-5">
@@ -292,9 +292,9 @@
         <!-- ── Option teinture ── -->
         <div class="h-px mb-8" style="background:rgba(212,132,154,0.1);"></div>
         <div class="mb-8">
-          <h2 class="font-serif text-xl font-medium mb-5 flex items-center gap-3" style="color:#2A1A20;">
+          <h2 class="font-serif text-xl font-medium mb-5 flex items-center gap-3" style="color:#1E1216;">
             <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0"
-                  style="background:linear-gradient(135deg,#E8A0B4,#D4849A);">4</span>
+                  style="background:#1E1216;">4</span>
             Option supplémentaire
           </h2>
           <label class="flex items-center justify-between p-5 rounded-2xl cursor-pointer transition-all duration-200"
@@ -302,19 +302,19 @@
                  id="teinture-label">
             <div class="flex items-center gap-4">
               <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                   style="background: linear-gradient(135deg, #E8A0B4, #D4849A);">
+                   style="background: #1E1216;">
                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5">
                   <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/>
                   <path d="M12 6v6l4 2"/>
                 </svg>
               </div>
               <div>
-                <p class="text-sm font-semibold" style="color:#2A1A20;">Teinture des cils</p>
-                <p class="text-xs mt-0.5" style="color:#8A6070;">Intensifie et définit le regard</p>
+                <p class="text-sm font-semibold" style="color:#1E1216;">Teinture des cils</p>
+                <p class="text-xs mt-0.5" style="color:#8A6B74;">Intensifie et définit le regard</p>
               </div>
             </div>
             <div class="flex items-center gap-3 shrink-0">
-              <span class="text-sm font-bold" style="color:#D4849A;">+5€</span>
+              <span id="teinture-price" class="text-sm font-bold" style="color:#A94E6A;">+5€</span>
               <div class="relative">
                 <input type="checkbox" name="teinture" value="1" id="teinture-check"
                        class="sr-only" {% if form_data.get('teinture') %}checked{% endif %}
@@ -338,8 +338,8 @@
               <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>
             </svg>
             <div>
-              <p class="text-sm font-medium mb-1" style="color:#D4849A;">Acompte de 10€ demandé</p>
-              <p class="text-xs" style="color:#8A6070;">Après confirmation, vous recevrez les coordonnées bancaires pour effectuer un virement de 10€ afin de valider votre rendez-vous.</p>
+              <p class="text-sm font-medium mb-1" style="color:#A94E6A;">Acompte de 10€ demandé</p>
+              <p class="text-xs" style="color:#8A6B74;">Après confirmation, vous recevrez les coordonnées bancaires pour effectuer un virement de 10€ afin de valider votre rendez-vous.</p>
             </div>
           </div>
         </div>
@@ -347,17 +347,17 @@
         <!-- Récapitulatif -->
         <div class="mb-8 p-5 rounded-2xl hidden" id="booking-summary"
              style="background:rgba(242,197,208,0.15); border:1px solid rgba(212,132,154,0.2);">
-          <p class="text-sm font-medium mb-3" style="color:#D4849A;">Récapitulatif</p>
-          <div class="space-y-2 text-sm" style="color:#8A6070;">
+          <p class="text-sm font-medium mb-3" style="color:#A94E6A;">Récapitulatif</p>
+          <div class="space-y-2 text-sm" style="color:#8A6B74;">
             <div class="flex justify-between">
-              <span>Date</span><span id="summary-date" style="color:#2A1A20;">—</span>
+              <span>Date</span><span id="summary-date" style="color:#1E1216;">—</span>
             </div>
             <div class="flex justify-between">
-              <span>Heure</span><span id="summary-time" style="color:#2A1A20;">—</span>
+              <span>Heure</span><span id="summary-time" style="color:#1E1216;">—</span>
             </div>
             <div class="flex justify-between border-t pt-2" style="border-color:rgba(212,132,154,0.15);">
               <span class="font-medium">Total</span>
-              <span id="summary-price" class="font-semibold" style="color:#D4849A;">—</span>
+              <span id="summary-price" class="font-semibold" style="color:#A94E6A;">—</span>
             </div>
           </div>
         </div>
@@ -365,7 +365,7 @@
         <!-- Submit -->
         <button type="submit" id="submit-btn"
                 class="w-full py-4 rounded-2xl text-base font-semibold text-white cursor-pointer transition-all duration-200 hover:opacity-90"
-                style="background:linear-gradient(135deg,#E8A0B4 0%,#D4849A 100%); box-shadow:0 4px 20px rgba(212,132,154,0.3);">
+                style="background:#1E1216; box-shadow:0 4px 20px rgba(212,132,154,0.3);">
           Confirmer la réservation
         </button>
       </form>
@@ -388,6 +388,8 @@
   let currentMonth    = TODAY.getMonth();
   let selectedDate    = null;
   let currentPrice    = null;
+  let currentPromo    = null;   // nom de la promo du jour choisi, ou null
+  let teintureOfferte = false;  // la promo du jour choisi comprend la teinture
   let unavailableDays = new Set();
 
   // Pre-fill if form had errors
@@ -489,7 +491,10 @@
     try {
       const r    = await fetch(`/api/price?date=${iso}`);
       const data = await r.json();
-      currentPrice = parseFloat(data.price);
+      currentPrice    = parseFloat(data.price);
+      currentPromo    = data.promo_name;
+      teintureOfferte = data.teinture_included;
+      applyPromoToTeinture();
       refreshPriceDisplay();
     } catch(e) {}
 
@@ -563,11 +568,29 @@
     updateSummary();
   }
 
+  // Promo « teinture comprise » : l'option est cochée d'office et ne se décoche pas
+  function applyPromoToTeinture() {
+    const check = document.getElementById('teinture-check');
+    const label = document.getElementById('teinture-label');
+    document.getElementById('teinture-price').textContent = teintureOfferte ? 'Comprise' : '+5€';
+    if (teintureOfferte) {
+      check.checked = true;
+      check.disabled = true;
+    } else if (check.disabled) {
+      check.disabled = false;
+      check.checked = false;
+    }
+    label.style.cursor = teintureOfferte ? 'default' : 'pointer';
+    updateTeinture(check.checked);
+  }
+
   function refreshPriceDisplay() {
     if (currentPrice === null) return;
     const teinture = document.getElementById('teinture-check').checked;
-    const total = currentPrice + (teinture ? PRICE_TEINTURE : 0);
-    const label = total + '€' + (teinture ? ' (teinture incluse)' : '');
+    const total = currentPrice + (teinture && !teintureOfferte ? PRICE_TEINTURE : 0);
+    const label = String(total).replace('.', ',') + '€'
+      + (teinture ? ' (teinture incluse)' : '')
+      + (currentPromo ? ' · Promo ' + currentPromo : '');
     document.getElementById('price-display').textContent = '· ' + label;
     document.getElementById('summary-price').textContent = label;
   }

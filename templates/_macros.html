@@ -1,0 +1,2 @@
+{% macro promo_icon(p) %}{{ '🎃' if 'hallo' in p.name|lower else '✦' }}{% endmacro %}
+{% macro promo_dates(p, tomorrow) %}{% if p.start_date > tomorrow %}du {{ p.start_date|date_fr }} au {{ p.end_date|date_fr }}{% else %}jusqu'au {{ p.end_date|date_fr }}{% endif %}{% endmacro %}
